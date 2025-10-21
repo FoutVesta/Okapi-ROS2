@@ -11,3 +11,8 @@ TO-DO:
 - Migrate Okapi folders from RFID Okapi repository
 - colcon build indivuial launch files
 
+IN PROGRESS:
+- Setting up migration tool for ROS! packages
+  - problem with running python3 ros_upgrader.py -c ~/Desktop/RFID/okapi_backup/build/rfh_controller/compile_commands.json
+  - no module names 'clang.clang_parser
+
