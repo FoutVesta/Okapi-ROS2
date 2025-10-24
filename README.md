@@ -14,7 +14,7 @@ COMPLETED:
 
 TO-DO:
 - colcon build indivduial launch files
-- Migrate launch files
+- Migrate launch files (watch: https://youtu.be/_vR9zdv1mhk )
 - Migrate Scripts 
 
 ==============================================================================================================================================================================
