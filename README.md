@@ -18,7 +18,9 @@ TO-DO:
 - Migrate Scripts 
 
 ==============================================================================================================================================================================
+
 STEPS FOR MIGRATING A PACKAGE: (assuming necassary prereqs installed, (see awslabs git))
+
 1. cd ~/ROS1_Package
 2. catkin_make -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 3. make sure compile_commands.json exists within package
