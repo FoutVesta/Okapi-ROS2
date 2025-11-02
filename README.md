@@ -29,3 +29,10 @@ STEPS FOR MIGRATING A PACKAGE: (assuming necassary prereqs installed, (see awsla
    -c ~/ROS1_Package/build/ROS1_Package/compile_commands.json \
    -p ~/ROS1_Package/package.xml
 6. Check output folder in ~/ros2-migration-tools for migrated ROS1 package!
+
+Packages successfully built with colcon build:
+- rfid_bot_tags_reader
+- rfid_bot_tags_localization
+- rfh_handheld_description
+- rfh_controller
+==============================================================================================================================================================================
