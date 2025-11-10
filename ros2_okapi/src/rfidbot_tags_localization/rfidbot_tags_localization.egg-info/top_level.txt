@@ -1,0 +1,1 @@
+rfidbot_tags_localization

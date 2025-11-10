@@ -5,7 +5,6 @@
   <description>The rfidbot_tags_localization package</description>
   <maintainer email="rfid@todo.todo">rfid</maintainer>
   <license>TODO</license>
-  <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
   <build_depend>rclcpp</build_depend>
   <build_depend>rclpy</build_depend>
@@ -17,13 +16,15 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>rfidbot_tags_reader</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>rfidbot_tags_interfaces</exec_depend>
+  <exec_depend>rfh_share_lib</exec_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>
-  <export>
+
     
 
-  </export>
+  
   <export>
-    <build_type>ament_cmake</build_type>
+    <build_type>ament_python</build_type>
   </export>
 </package>

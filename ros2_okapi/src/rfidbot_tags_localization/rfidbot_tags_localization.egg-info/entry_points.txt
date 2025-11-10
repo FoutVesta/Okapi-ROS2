@@ -1,0 +1,2 @@
+[console_scripts]
+rfh_tags_localization_main_ros2 = rfidbot_tags_localization.rfh_tags_localization_main_ros2:main
