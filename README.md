@@ -11,6 +11,7 @@ COMPLETED:
   - rfh_handheld_description
   - rfidbot_tags_localization
   - rfidbot_tags_reader
+- Migrated all Python scripts within rfidbot_tags_localization
 
 TO-DO:
 - colcon build indivduial launch files
