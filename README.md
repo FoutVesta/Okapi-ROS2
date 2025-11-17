@@ -23,6 +23,7 @@ TO-DO:
 ==============================================================================================================================================================================
 
 STEPS FOR MIGRATING A PACKAGE: (assuming necassary prereqs installed, (see awslabs git))
+(*NOTE* - This method is slightly outdated so it is recommended to manually migrate CMake and package.xml files)
 
 1. cd ~/ROS1_Package
 2. catkin_make -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
