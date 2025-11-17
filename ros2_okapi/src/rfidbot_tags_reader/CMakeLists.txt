@@ -10,7 +10,7 @@ add_compile_options(-std=c++17)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_library(EXT_LIBRARY
-  NAMES ltkcpp libltkcpp.a
+  NAMES ltkcpp libltkcpp.so libltkcpp.a
   PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Library
 )
 find_package(ament_cmake REQUIRED)
