@@ -1,31 +1,38 @@
 cmake_minimum_required(VERSION 3.5)
 project(rfidbot_tags_reader)
 
-# Add support for C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
-
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_library(EXT_LIBRARY libltkcpp.a
-  /home/rfid/okapi_realsense_ws/src/rfidbot_tags_reader/Library)
+find_library(EXT_LIBRARY
+  NAMES ltkcpp libltkcpp.a
+  PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Library
+)
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(Boost REQUIRED COMPONENTS thread)
+find_package(rosidl_default_generators REQUIRED)
+find_package(rosidl_default_runtime REQUIRED)
 find_package(std_msgs REQUIRED)
 set(INCLUDE_DIRS ${ament_cmake_INCLUDE_DIRS} ${rclpy_INCLUDE_DIRS}
   ${rosidl_default_generators_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS}
   ${std_msgs_INCLUDE_DIRS})
-include_directories(${INCLUDE_DIRS})
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/rfidbot_tags_reader
+  ${CMAKE_CURRENT_SOURCE_DIR}/Library
+)
 set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${rclpy_LIBRARIES}
   ${rosidl_default_generators_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
 set(LIBS ${ament_cmake_LIBRARIES} ${rclpy_LIBRARIES}
   ${rosidl_default_generators_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
-rosidl_generate_interfaces(${PROJECT_NAME} "msg/tagReader.msg"
+rosidl_generate_interfaces(${PROJECT_NAME} "msg/TagReader.msg"
   DEPENDENCIES builtin_interfaces std_msgs)
 
 ## System dependencies are found with CMake's conventions
@@ -92,9 +99,22 @@ rosidl_generate_interfaces(${PROJECT_NAME} "msg/tagReader.msg"
 #target_link_libraries(rfidbot_rfid_tags_reader ${EXT_LIBRARY} ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
-#add_executable(rfidbot_tags_reader_node src/rfidbot_tags_reader_main.cpp)
-#target_link_libraries(rfidbot_tags_reader_node ${EXT_LIBRARY} ${catkin_LIBRARIES})
-#set_target_properties(rfidbot_tags_reader_node PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+add_executable(rfidbot_tags_reader_main src/rfidbot_tags_reader_main.cpp)
+ament_target_dependencies(rfidbot_tags_reader_main rclcpp std_msgs)
+target_include_directories(rfidbot_tags_reader_main PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/rfidbot_tags_reader>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp>
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(rfidbot_tags_reader_main
+  ${EXT_LIBRARY}
+  ${LIBS}
+  Boost::thread
+  ${PROJECT_NAME}__rosidl_typesupport_cpp      # <-- ADD THIS
+)
+add_dependencies(rfidbot_tags_reader_main
+  ${PROJECT_NAME}__rosidl_typesupport_cpp)
+#set_target_properties(rfidbot_tags_reader_main PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -120,18 +140,18 @@ rosidl_generate_interfaces(${PROJECT_NAME} "msg/tagReader.msg"
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS rfidbot_tags_reader rfidbot_tags_reader_node
-#   ARCHIVE DESTINATION lib
-#   LIBRARY DESTINATION lib
-#   RUNTIME DESTINATION bin
-# )
+install(TARGETS rfidbot_tags_reader_main
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION include/${PROJECT_NAME}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION include/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
@@ -156,8 +176,13 @@ rosidl_generate_interfaces(${PROJECT_NAME} "msg/tagReader.msg"
 ament_export_dependencies(ament_cmake)
 ament_export_dependencies(rclpy)
 ament_export_dependencies(rosidl_default_generators)
+ament_export_dependencies(rosidl_default_runtime)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(std_msgs)
 ament_export_include_directories(${INCLUDE_DIRS})
 
 ament_package()
+
+
+
+
