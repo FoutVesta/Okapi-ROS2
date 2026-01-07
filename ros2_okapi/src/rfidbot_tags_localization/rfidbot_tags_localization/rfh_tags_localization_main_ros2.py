@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-* File name: rfh_tags_localization_main_ros2.py
+* File name: rfh_tags_localization_main.py
 * Description: ROS2 version of Okapi handheld RFID tag localization node.
 *              Records RFID tags with related Kinect pose and estimates tag positions.
 * Author: Jian Zhang
@@ -9,6 +9,7 @@
 * Version 2.0 for ROS2 Humble
 """
 
+import traceback
 import os
 import sys
 import datetime
@@ -70,7 +71,7 @@ class RFHTagsLocalization(Node):
         self.create_service(TagLocalizing, "localize_a_tag", self.localize_a_tag_handler)
 
         # ===== Recorder and Localizer =====
-        self.fixPowerRecorder = rfhFixPowerRecoder(1, 10.0)
+        self.fixPowerRecorder = rfhFixPowerRecoder(self, 1, 10.0)
         self.fixPowerRecorder.setRawDataFileAdr(self.rfhFixPathRawDataFile)
         self.RFIDLocalizer = self.initialize_localizer()
 

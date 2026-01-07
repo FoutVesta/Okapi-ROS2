@@ -244,7 +244,7 @@ class rfidbotRBLocalizeATag:
 # TEST / STANDALONE RUN
 # ----------------------------------------------------------
 if __name__ == "__main__":
-    rclpy.init()
+    #rclpy.init()
     loc = rfidbotRBLocalizeATag()
     loc.logger.info("Testing RFID Bayesian localization base class...")
     loc.RFIDModel.BeliefMapResolution = 0.05

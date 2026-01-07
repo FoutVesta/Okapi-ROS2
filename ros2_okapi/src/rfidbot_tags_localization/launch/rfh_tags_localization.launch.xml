@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <!-- Launch arguments -->
+  <arg name="odom_topic" default="/t265/odom/sample"/>
+  <arg name="rfid_txpower" default="170"/>
+  <arg name="antenna_frameid" default="RFD8500_antena"/>
+  <arg name="map_frameid" default="map"/>
+  <arg name="rfid_ob_mindis" default="0.01"/>
+  <arg name="localizer_type" default="3DRBGPU"/>
+  <arg name="reader_type" default="RFD8500"/>
+
+  <!-- Node -->
+  <node
+    pkg="rfidbot_tags_localization"
+    exec="rfh_tags_localization_main_ros2"
+    name="rfh_tags_localization_main"
+    output="screen">
+
+    <!-- Remaps -->
+    <remap from="/odom" to="$(var odom_topic)"/>
+
+    <!-- Parameters -->
+    <param name="txpower" value="$(var rfid_txpower)"/>
+    <param name="antenna_frameid" value="$(var antenna_frameid)"/>
+    <param name="map_frameid" value="$(var map_frameid)"/>
+    <param name="rfid_ob_mindis" value="$(var rfid_ob_mindis)"/>
+    <param name="localizer_type" value="$(var localizer_type)"/>
+    <param name="reader_type" value="$(var reader_type)"/>
+
+  </node>
+
+</launch>
+
+

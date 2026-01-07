@@ -285,9 +285,9 @@ class RRRBDebuger(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    #rclpy.init(args=args)
     node = RRRBDebuger()
-    rclpy.spin(node)
+    #rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 

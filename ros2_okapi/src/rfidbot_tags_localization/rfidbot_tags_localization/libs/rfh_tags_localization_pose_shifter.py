@@ -21,6 +21,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PointStamped, PoseStamped, TransformStamped
 import tf2_ros
+from tf2_ros import TransformListener, Buffer
 import tf2_geometry_msgs
 import tf_transformations
 import math
@@ -28,13 +29,14 @@ import time
 
 
 # tf transform still not working !
-class rfhposeShifter(Node):  
-    def __init__(self):
-        super().__init__('rfh_pose_shifter')
+class rfhposeShifter:
+    def __init__(self, node):
+        self.node = node
+        self.logger = node.get_logger()
         # tf buffer length (cache)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-        self.br = tf2_ros.TransformBroadcaster(self)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+        self.br = tf2_ros.TransformBroadcaster(self.node)
 
     def shiftPose(self, sourceFrameId, targetFrameId, globalFrameId, pose):
         '''
@@ -241,9 +243,9 @@ class rfhposeShifter(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    #rclpy.init(args=args)
     node = rfhposeShifter()
-    rclpy.spin(node)
+    #rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 

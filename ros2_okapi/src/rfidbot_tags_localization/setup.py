@@ -6,6 +6,12 @@ setup(
     name=package_name,
     version='0.0.1',
     packages=find_packages(include=[f"{package_name}", f"{package_name}.*"]),
+    data_files=[
+        ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch',
+            ['launch/rfidbot_tags_localization.launch.xml',
+             'launch/rfh_tags_localization.launch.xml']),
+    ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='rfid3',

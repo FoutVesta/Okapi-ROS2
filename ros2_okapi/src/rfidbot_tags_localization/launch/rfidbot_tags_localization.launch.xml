@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node
+    pkg="rfidbot_tags_localization"
+    exec="rfh_tags_localization_main_ros2"
+    name="rfidbot_tags_localization_main"
+    output="screen" />
+
+</launch>
+

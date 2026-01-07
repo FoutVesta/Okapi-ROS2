@@ -16,7 +16,7 @@ from nav_msgs.msg import Odometry
 import sys, os, os.path, pickle
 
 # ROS 2 Python packages
-from rfidbot_tags_reader.msg import TagReader
+from rfidbot_tags_interfaces.msg import TagReader
 
 # Import internal modules within package namespace
 from rfidbot_tags_localization.data_recorders.rfidbot_tags_localization_readrate_rawdata_base import rfidbotTagsLocReadRateRawData
@@ -26,34 +26,33 @@ from rfh_share_lib.rfidbot_set_para_2_reader import rfidbotReaderFilterSetter
 from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rfhposeShifter
 
 
-class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase, Node):
-    def __init__(self, rate_ratio, rate_hz):
-        Node.__init__(self, 'rfh_fix_power_rawdata_recorder')
-        rfidbotTagLocRawDataRecordBase.__init__(self)
+class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
+    def __init__(self, node, rate_ratio, rate):
+        super().__init__(node)
 
         self.name = "rfh fix power raw data recorder"
         self.rate_ratio = rate_ratio
-        self.rate_hz = rate_hz
-        self.rate = self.create_rate(rate_hz)
+        self.rate_hz = rate
+        self.rate = self.node.create_rate(rate)
         self.tagLocRawData = []
 
         # Parameters (declare + get)
-        self.declare_parameter('txpower', 130)
-        self.declare_parameter('antenna_frameid', "RFD8500_antenna")
-        self.declare_parameter('map_frameid', "map")
+        self.node.declare_parameter('txpower', 130)
+        self.node.declare_parameter('antenna_frameid', "RFD8500_antenna")
+        self.map_frameid = self.node.get_parameter('map_frameid').value
 
-        self.power = int(self.get_parameter('txpower').value)
-        self.antennaFrameId = self.get_parameter('antenna_frameid').value
-        self.mapFrameId = self.get_parameter('map_frameid').value
+        self.power = int(self.node.get_parameter('txpower').value)
+        self.antennaFrameId = self.node.get_parameter('antenna_frameid').value
+        self.mapFrameId = self.node.get_parameter('map_frameid').value
 
-        self.poseShifter = rfhposeShifter()
+        self.poseShifter = rfhposeShifter(self.node)
 
         # Initialize filter setter for power reset and tag filter reset
         self.isResetPower = False
-        self.filterSetter = rfidbotReaderFilterSetter(self.rate_ratio, self.rate)
+        self.filterSetter = rfidbotReaderFilterSetter(self.node, self.rate_ratio, self.rate_hz)
 
         # ROS 2 subscription
-        self.create_subscription(Bool, '/set_tx', self.setPowerCallback, 10)
+        self.node.create_subscription(Bool, '/set_tx', self.setPowerCallback, 10)
 
         # Initial setup delay and reset
         self.waitForPeriod(2.5)
@@ -64,7 +63,7 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase, Node):
             self.resetPowerLevel2Reader()
 
     def resetPowerLevel2Reader(self):
-        self.get_logger().warn(f"Setting power level {self.power}")
+        self.node.get_logger().warn(f"Setting power level {self.power}")
         self.filterSetter.pauseInven2DelRos()
         self.waitForPeriod(1.5)
         self.filterSetter.setTxPower(self.power)
@@ -91,14 +90,14 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase, Node):
         for _, rawData in enumerate(self.tagLocRawData):
             if rawData.TagEpc not in self.uniqueTagsEPC:
                 self.uniqueTagsEPC.append(rawData.TagEpc)
-        self.get_logger().warn(f"Total scanned unique tag number: {len(self.uniqueTagsEPC)}")
+        self.node.get_logger().warn(f"Total scanned unique tag number: {len(self.uniqueTagsEPC)}")
 
     def saveRawData2File(self, rawDataFile=None):
         if rawDataFile is None:
             rawDataFile = self.rawDataFileAddr
         with open(rawDataFile, 'wb') as f:
             pickle.dump(self.tagLocRawData, f)
-        self.get_logger().warn(f"Saved raw data to file {rawDataFile}")
+        self.node.get_logger().warn(f"Saved raw data to file {rawDataFile}")
 
     def readRawDataFromFile(self, rawDataFile=None):
         if rawDataFile is None:
@@ -108,8 +107,8 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase, Node):
             return
         with open(rawDataFile, 'rb') as f:
             self.tagLocRawData = pickle.load(f)
-        self.get_logger().warn(f"Read raw data from file {rawDataFile}")
-        self.get_logger().warn(f"Size of raw data: {len(self.tagLocRawData)}")
+        self.node.get_logger().warn(f"Read raw data from file {rawDataFile}")
+        self.node.get_logger().warn(f"Size of raw data: {len(self.tagLocRawData)}")
 
     def initARawDataByTagandPose(self, tag, candidatePose):
         tmpRawData = rfidbotTagsLocReadRateRawData()

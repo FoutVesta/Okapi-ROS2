@@ -11,7 +11,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Int16
-from rfidbot_tags_reader.msg import TagReader
+from rfidbot_tags_interfaces.msg import TagReader
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 import pickle
@@ -21,13 +21,14 @@ FLOAT_ZERO = 1e-8
 BAD_POSITION = 9999.9
 
 
-class rfidbotTagLocRawDataRecordBase(Node):
+class rfidbotTagLocRawDataRecordBase:
     """
     Base class for RFID tag localization raw data recorder (ROS 2)
     """
 
-    def __init__(self):
-        super().__init__('rfidbot_tag_loc_rawdata_recorder_base')
+    def __init__(self, node):
+        self.node = node
+        self.logger = node.get_logger()
 
         self.tags = []
         self.uniqueTagsEPC = []     # unique tag EPCs; call getUniqueTags() to populate
@@ -37,8 +38,12 @@ class rfidbotTagLocRawDataRecordBase(Node):
         self.rawDataFileAddr = None
 
         # ROS 2 subscriptions
-        self.create_subscription(TagReader, '/rfid_tags', self.rfidtagsCallBack, 10)
-        self.create_subscription(Odometry, '/odom', self.poseCallback, 10)
+        self.node.create_subscription(
+            TagReader, '/rfid_tags', self.rfidtagsCallBack, 10
+        )
+        self.node.create_subscription(
+            Odometry, '/odom', self.poseCallback, 10
+        )
         # self.create_subscription(PoseWithCovarianceStamped, '/pose', self.poseCallback, 10)
 
     # Simply append tag to array
