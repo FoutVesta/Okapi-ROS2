@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <!-- Arguments -->
+  <arg name="rfid_txpower" default="180"/>
+
+  <!-- RFID reader node (Python) -->
+  <node
+    pkg="rfidbot_tags_reader"
+    exec="rfd8500_reader.py"
+    name="rfd8500_reader"
+    output="screen">
+
+    <param name="session" value="0"/>
+    <param name="txpower" value="$(var rfid_txpower)"/>
+
+  </node>
+
+</launch>

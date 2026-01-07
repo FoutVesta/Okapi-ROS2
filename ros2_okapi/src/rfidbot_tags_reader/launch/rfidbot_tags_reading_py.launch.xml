@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node
+    pkg="rfidbot_tags_reader"
+    exec="rfidbot_tags_reader_main"
+    name="rfidbot_tags_reader_main"
+    output="screen">
+
+    <param name="session" value="0"/>
+    <param name="host" value="192.168.115.184"/>
+    <param name="txpower" value="200"/>
+    <param name="antennaIds" value="0"/>
+    <param name="phaseOffset" value="-1"/>
+
+  </node>
+
+</launch>
+

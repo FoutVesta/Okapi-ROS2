@@ -17,7 +17,7 @@
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/int32.hpp>
 
-#include "rfidbot_tags_reader/msg/tag_reader.hpp"   // ✅ correct auto-generated message include
+#include "rfidbot_tags_interfaces/msg/tag_reader.hpp"   
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +25,7 @@
 #include <rfidbot_tags_reader/ltkcpp.h>
 
 using namespace LLRP;
-using namespace rfidbot_tags_reader;
+//using namespace rfidbot_tags_reader;
 
 class CRFIDBotTagsReader
 {
@@ -84,7 +84,7 @@ class CRFIDBotTagsReader
         void printXMLMessage (CMessage *pMessage);
 
         void updateTagReaderMsgHeader(
-            const rfidbot_tags_reader::msg::TagReader::SharedPtr rfid_msg,
+            const rfidbot_tags_interfaces::msg::TagReader::SharedPtr rfid_msg,
             int iAntennaID);
 
         void setActiveAntennae(unsigned int uAntenae);
@@ -102,7 +102,7 @@ class CRFIDBotTagsReader
         void setActiveAntennaeCallBack(const std_msgs::msg::Int32::SharedPtr msg);
 
     private:
-        rclcpp::Publisher<rfidbot_tags_reader::msg::TagReader>::SharedPtr rfid_tags_pub_;  // Publisher for output RFID tags
+        rclcpp::Publisher<rfidbot_tags_interfaces::msg::TagReader>::SharedPtr rfid_tags_pub_;  // Publisher for output RFID tags
         unsigned int m_uAntennaBits;     /* every bit is the switch for an antenna.
                                         m_uAntennaBits[0]=1 for antenna 1 on, 
                                         m_uAntennaBits[0]=0 off antenna 1. 

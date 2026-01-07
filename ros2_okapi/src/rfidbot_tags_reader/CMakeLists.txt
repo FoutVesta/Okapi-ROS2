@@ -14,12 +14,15 @@ find_library(EXT_LIBRARY
   PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Library
 )
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
+find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(rfidbot_tags_interfaces REQUIRED)
 set(INCLUDE_DIRS ${ament_cmake_INCLUDE_DIRS} ${rclpy_INCLUDE_DIRS}
   ${rosidl_default_generators_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS}
   ${std_msgs_INCLUDE_DIRS})
@@ -32,10 +35,10 @@ set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${rclpy_LIBRARIES}
   ${rosidl_default_generators_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
 set(LIBS ${ament_cmake_LIBRARIES} ${rclpy_LIBRARIES}
   ${rosidl_default_generators_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
-rosidl_generate_interfaces(${PROJECT_NAME} "msg/TagReader.msg"
-  DEPENDENCIES builtin_interfaces std_msgs)
+#rosidl_generate_interfaces(${PROJECT_NAME} "msg/TagReader.msg"
+#  DEPENDENCIES builtin_interfaces std_msgs)
 
-## System dependencies are found with CMake's conventions
+## System dependencies are found wi--- stderr: rfidbot_tags_reader                                                
 # find_package(Boost REQUIRED COMPONENTS system)
 
 
@@ -100,7 +103,13 @@ rosidl_generate_interfaces(${PROJECT_NAME} "msg/TagReader.msg"
 
 ## Declare a cpp executable
 add_executable(rfidbot_tags_reader_main src/rfidbot_tags_reader_main.cpp)
-ament_target_dependencies(rfidbot_tags_reader_main rclcpp std_msgs)
+
+ament_target_dependencies(rfidbot_tags_reader_main
+  rclcpp
+  std_msgs
+  rfidbot_tags_interfaces
+)
+
 target_include_directories(rfidbot_tags_reader_main PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/rfidbot_tags_reader>
@@ -110,10 +119,9 @@ target_link_libraries(rfidbot_tags_reader_main
   ${EXT_LIBRARY}
   ${LIBS}
   Boost::thread
-  ${PROJECT_NAME}__rosidl_typesupport_cpp      # <-- ADD THIS
 )
-add_dependencies(rfidbot_tags_reader_main
-  ${PROJECT_NAME}__rosidl_typesupport_cpp)
+#add_dependencies(rfidbot_tags_reader_main
+#  ${PROJECT_NAME}__rosidl_typesupport_cpp)
 #set_target_properties(rfidbot_tags_reader_main PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 
 ## Add cmake target dependencies of the executable/library
@@ -134,10 +142,11 @@ add_dependencies(rfidbot_tags_reader_main
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION bin
-# )
+install(PROGRAMS
+  rfidbot_tags_reader/rfidbot_tags_reader_main_py.py
+  rfidbot_tags_reader/rfd8500_reader.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ## Mark executables and/or libraries for installation
 install(TARGETS rfidbot_tags_reader_main
@@ -146,11 +155,22 @@ install(TARGETS rfidbot_tags_reader_main
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+# Install Python package (modules like llrp.py)
+install(
+  DIRECTORY rfidbot_tags_reader
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ## Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE
+)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
@@ -180,6 +200,11 @@ ament_export_dependencies(rosidl_default_runtime)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(std_msgs)
 ament_export_include_directories(${INCLUDE_DIRS})
+
+##############
+# Python Install
+##############
+#ament_python_install_package(${PROJECT_NAME})
 
 ament_package()
 

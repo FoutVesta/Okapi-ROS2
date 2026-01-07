@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node
+    pkg="rfidbot_tags_reader"
+    exec="rfidbot_tags_reader_main"
+    name="rfidbot_tags_reader_main"
+    output="screen">
+
+    <param name="session" value="1"/>
+    <param name="host" value="192.168.115.184"/>
+    <param name="txpower" value="170"/>
+    <param name="antennaIds" value="15"/>
+
+    <!-- Optional remaps (ROS 2 syntax is the same) -->
+    <!--
+    <remap from="rfidbot_tags_reader_main/rfid_tags" to="rfid_tags"/>
+    <remap from="/pause_inventory_delete_pos" to="rfidbot_tags_reader_main/pause_inventory_delete_pos"/>
+    -->
+
+  </node>
+
+</launch>
+

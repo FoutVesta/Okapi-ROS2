@@ -243,7 +243,7 @@ int main (int argc, char **argv)
 CRFIDBotTagsReader::CRFIDBotTagsReader(std::shared_ptr<rclcpp::Node> node) :
     m_Verbose(0), m_pConnectionToReader(nullptr), node_(node)
 {
-    rfid_tags_pub_ = node_->create_publisher<rfidbot_tags_reader::msg::TagReader>(
+    rfid_tags_pub_ = node_->create_publisher<rfidbot_tags_interfaces::msg::TagReader>(
         "rfid_tags",
         20
     );
@@ -1627,7 +1627,7 @@ void CRFIDBotTagsReader::printOneTagReportData (CTagReportData *pTagReportData)
      */
 
     CParameter *pEPCParameter = pTagReportData->getEPCParameter();
-    auto tmpMsg = std::make_shared<rfidbot_tags_reader::msg::TagReader>();
+    auto tmpMsg = std::make_shared<rfidbot_tags_interfaces::msg::TagReader>();
 
     if(NULL != pEPCParameter)
     {
@@ -1712,7 +1712,7 @@ void CRFIDBotTagsReader::printOneTagReportData (CTagReportData *pTagReportData)
  **
  *****************************************************************************/
 void CRFIDBotTagsReader::updateTagReaderMsgHeader(
-        const rfidbot_tags_reader::msg::TagReader::SharedPtr rfid_msg,
+        const rfidbot_tags_interfaces::msg::TagReader::SharedPtr rfid_msg,
 int iAntennaID)
 {
     rfid_msg->header.stamp = node_->get_clock()->now();
