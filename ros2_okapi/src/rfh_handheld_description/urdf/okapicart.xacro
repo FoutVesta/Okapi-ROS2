@@ -1,0 +1,260 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="zebraRFD8500reader">
+    
+<material name="Green">
+      <color rgba="0.0 0.8 0.0 1.0"/>
+</material>
+<material name="Red">
+      <color rgba="0.8 0.0 0.0 1.0"/>
+</material>
+<material name="White">
+      <color rgba="1.0 1.0 1.0 1.0"/>
+</material>
+<material name="Blue">
+      <color rgba="0.0 0.0 0.8 1.0"/>
+</material>
+<material name="Black">
+      <color rgba="0.0 0.0 0.0 1.0"/>
+</material>
+<material name="Grey">
+      <color rgba="0.25 0.25 0.25 1.0"/>
+</material>
+<material name="Silver">
+      <color rgba="0.38 0.38 0.38 1.0"/>
+</material>
+<material name="Sandal">
+      <color rgba="0.84 0.87 0.50 1.0"/>
+</material>
+<material name="LBlue">
+      <color rgba="0.18 0.30 0.58 1.0"/>
+</material>
+<material name="Yellow">
+      <color rgba="1 1 0 1.0"/>
+</material>
+
+
+<!--okapi cart links and jionts, okapicart_footprint is the root -->
+<!-- camera jionts are not included here, it is provided in launch file by static_transform_publisher  -->
+
+    <!-- okapicart_footprint is a visual plane of the okapi cart on the ground -->
+    <link name="okapicart_footprint">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.32 0.51 0.02" />
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.01 0.01" />
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- okapicart_basket is a battom plane of the basket of the okapi cart -->
+    <link name="okapicart_basket">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.32 0.51 0.02" />
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.01 0.01" />
+            </geometry>
+        </collision>
+    </link>
+    
+    <joint name="basket_footprint_joint" type="fixed">
+            <origin xyz="0.00 0.0 0.73" rpy="0 0 0" />  
+            <parent link="okapicart_footprint" /> 
+             <child link="okapicart_basket" />
+    </joint>
+
+
+    
+    <link name="RFID_antena_1">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_1_basket_joint" type="fixed">
+            <origin xyz="0.12 -0.37 0.41" rpy="0 0 -1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_1" />
+    </joint>
+
+    <link name="RFID_antena_2">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_2_basket_joint" type="fixed">
+            <origin xyz="0.12 -0.37 0.97" rpy="0 0 -1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_2" />
+    </joint>
+
+    <link name="RFID_antena_3">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_3_basket_joint" type="fixed">
+            <origin xyz="0.12 -0.37 1.35" rpy="0 0 -1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_3" />
+    </joint>
+
+    <link name="RFID_antena_4">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_4_basket_joint" type="fixed">
+            <origin xyz="0.12 0.37 1.35" rpy="0 0 1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_4" />
+    </joint>
+
+    <link name="RFID_antena_5">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_5_basket_joint" type="fixed">
+            <origin xyz="0.12 0.37 0.97" rpy="0 0 1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_5" />
+    </joint>
+
+        
+    <link name="RFID_antena_6">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.02 0.12 0.12" />
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="RFID_antena_6_basket_joint" type="fixed">
+            <origin xyz="0.12 0.37 0.41" rpy="0 0 1.57" />   <!-- xyz="0.09 0 0.055" rpy="0 0.2356 0": rotation 15  Kinect 2 need add 0.05 as offset -->
+            <parent link="okapicart_footprint" /> 
+            <child link="RFID_antena_6" />
+    </joint>
+
+
+    <link name="antena_bar_1">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.04 0.08 1.4" />
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="antena_bar_1_basket_joint" type="fixed">
+            <origin xyz="0.12 0.30 0.7" rpy="0 0 1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="antena_bar_1" />
+    </joint>
+
+    <link name="antena_bar_2">
+        <visual>
+            <origin xyz="-0.015 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.04 0.08 1.4" />
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0.017" rpy="0 0 0" />
+        <geometry>
+            <box size="0.02 0.01 0.01" />
+        </geometry>
+        </collision>
+    </link>
+
+    <joint name="antena_bar_2_basket_joint" type="fixed">
+            <origin xyz="0.12 -0.30 0.7" rpy="0 0 -1.57" />   
+            <parent link="okapicart_footprint" /> 
+            <child link="antena_bar_2" />
+    </joint>
+
+
+</robot>

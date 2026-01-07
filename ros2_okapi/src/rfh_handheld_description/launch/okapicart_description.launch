@@ -1,0 +1,14 @@
+<!--
+* File Name: okapicart_description.launch
+* Description:  Launches the okapi cart's transforms built from the okapicart.xacro file
+* Author: Jian Zhang
+* Date: 5-25-2020
+-->
+
+<launch>
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find rfh_handheld_description)/urdf/okapicart.xacro'" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher"
+        name="robot_state_publisher" output="screen">
+        <param name="publish_frequency" type="double" value="10.0" />
+    </node>
+</launch>

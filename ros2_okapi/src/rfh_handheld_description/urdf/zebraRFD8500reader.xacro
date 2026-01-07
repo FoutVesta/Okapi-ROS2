@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="zebraRFD8500reader">
+
+  <!-- ========================= -->
+  <!-- Materials -->
+  <!-- ========================= -->
+  <material name="Green">
+    <color rgba="0.0 0.8 0.0 1.0"/>
+  </material>
+  <material name="Red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+  <material name="White">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+  <material name="Blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+  <material name="Black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="Grey">
+    <color rgba="0.25 0.25 0.25 1.0"/>
+  </material>
+  <material name="Silver">
+    <color rgba="0.38 0.38 0.38 1.0"/>
+  </material>
+  <material name="Sandal">
+    <color rgba="0.84 0.87 0.50 1.0"/>
+  </material>
+  <material name="LBlue">
+    <color rgba="0.18 0.30 0.58 1.0"/>
+  </material>
+  <material name="Yellow">
+    <color rgba="1 1 0 1.0"/>
+  </material>
+
+  <!-- ========================= -->
+  <!-- RFD8500 links and joints -->
+  <!-- RFD8500_footprint is the root -->
+  <!-- ========================= -->
+
+  <link name="RFD8500_footprint">
+    <visual>
+      <origin xyz="-0.1 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.2 0.06 0.02"/>
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.017" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RFD8500_antenna">
+    <visual>
+      <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.07 0.10"/>
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.017" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="RFD8500_antenna_footprint_joint" type="fixed">
+    <origin xyz="0.01 0.0 -0.07" rpy="0 0.312 0"/>
+    <parent link="RFD8500_footprint"/>
+    <child link="RFD8500_antenna"/>
+  </joint>
+
+</robot>
+
