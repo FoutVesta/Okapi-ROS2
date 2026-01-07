@@ -12,9 +12,11 @@ endif()
 ## is used, also find other catkin packages
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rclpy REQUIRED)
+
 set(INCLUDE_DIRS ${ament_cmake_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS}
   ${std_msgs_INCLUDE_DIRS} ${rclpy_INCLUDE_DIRS})
 include_directories(${INCLUDE_DIRS})
@@ -22,6 +24,7 @@ set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${rclcpp_LIBRARIES}
   ${std_msgs_LIBRARIES} ${rclpy_LIBRARIES})
 set(LIBS ${ament_cmake_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES}
   ${rclpy_LIBRARIES})
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -156,6 +159,20 @@ set(LIBS ${ament_cmake_LIBRARIES} ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES}
 #   DESTINATION bin
 # )
 
+# Install actual Python scripts as ROS 2 executables
+install(PROGRAMS
+  rfh_controller/rfh_controller_console.py
+  rfh_controller/rfh_gui_main.py
+  rfh_controller/rfh_sys_controller.py
+  rfh_controller/rfh_system_monitor.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
 ## Mark executables and/or libraries for installation
 # install(TARGETS rfh_controller rfh_controller_node
 #   ARCHIVE DESTINATION lib
@@ -197,3 +214,4 @@ ament_export_dependencies(rclpy)
 ament_export_include_directories(${INCLUDE_DIRS})
 
 ament_package()
+

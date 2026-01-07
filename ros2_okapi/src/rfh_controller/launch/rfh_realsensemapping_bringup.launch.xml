@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!--
+       This is the launch file to bring up:
+        1. the realsense camera (d435i ONLY)
+        2. rtabmaps with mapping/localization function
+        3. Zebra reader description
+        4. static tf among the reader and camera (thus also with the map)
+    -->
+
+    <!-- ========================= -->
+    <!-- Arguments -->
+    <!-- ========================= -->
+    <arg name="use_rviz"                    default="true"/>
+    <arg name="camera"                     default="camera"/>
+    <arg name="rfid_txpower"               default="130"/>
+    <arg name="localization"               default="false"/>
+
+    <arg name="clip_distance"              default="-2"/>
+    <arg name="use_rtabmapviz"             default="false"/>
+
+    <!-- ========================= -->
+    <!-- RealSense D435i ONLY -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+
+        <arg name="camera_name"      value="$(var camera)"/>
+        <arg name="device_type"      value="d435i"/>
+
+        <!-- Enable IMU -->
+        <arg name="enable_gyro"      value="true"/>
+        <arg name="enable_accel"     value="true"/>
+        <arg name="unite_imu_method" value="2"/>
+
+        <!-- Enable streams -->
+        <arg name="enable_depth"     value="true"/>
+        <arg name="enable_color"     value="true"/>
+        <arg name="clip_distance"    value="$(var clip_distance)"/>
+
+    </include>
+
+    <!-- ========================= -->
+    <!-- RTAB-Map -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+
+        <arg name="rtabmap_args"      value="--delete_db_on_start"/>
+
+        <!-- Topics -->
+        <arg name="rgb_topic"         value="/$(var camera)/color/image_raw"/>
+        <arg name="depth_topic"       value="/$(var camera)/aligned_depth_to_color/image_raw"/>
+        <arg name="camera_info_topic" value="/$(var camera)/color/camera_info"/>
+
+        <!-- Frames -->
+        <arg name="frame_id"          value="$(var camera)_link"/>
+
+        <!-- Visual + IMU odometry -->
+        <arg name="visual_odometry"   value="true"/>
+        <arg name="imu_topic"         value="/$(var camera)/imu"/>
+
+        <!-- UI -->
+        <arg name="queue_size"        value="200"/>
+        <arg name="rviz"              value="$(var use_rviz)"/>
+        <arg name="rtabmapviz"        value="$(var use_rtabmapviz)"/>
+        <arg name="rviz_cfg"
+             value="$(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
+
+    </include>
+
+    <!-- ========================= -->
+    <!-- Zebra RFID description -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share rfh_handheld_description)/launch/zebraRFD8500reader_description.launch.xml"/>
+
+    <!-- ========================= -->
+    <!-- Static TF (ROS2 style) -->
+    <!-- camera_link -> RFD8500_footprint -->
+    <!-- ========================= -->
+    <node
+        pkg="tf2_ros"
+        exec="static_transform_publisher"
+        name="camera_to_rfidreader"
+        args="0 0 0 0 0 0 $(var camera)_link RFD8500_footprint"/>
+
+</launch>
+
+
