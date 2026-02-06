@@ -36,7 +36,8 @@ GET_BT = 'gd'+' '+ '.bt' + '\r\n'
 #GET_GR = 'gr' + '\r\n'
 # RFD850015314523021347_ADDR = '00:17:E9:FA:C7:01'
 # RFD850015313523020835_ADDR = '00:17:E9:FA:CB:9F'
-RFD850015314523021347_ADDR = '84:C6:92:4B:C9:7C' # Mac's Handheld
+# RFD850015314523021347_ADDR = '84:C6:92:49:11:A4' # RFD8500 Handheld
+RFD850022253520100892_ADDR = '84:C6:92:49:11:A4' 
 # RFD850015314523021347_ADDR = '84:C6:92:4B:C7:F8' # Justin's handheld
 
 RFD8500_START_INV = 1
@@ -188,7 +189,7 @@ class tagsRFD8500Reader():
             self.node.get_logger().warn("please push the trigger of RFD8500")
             try:
                 gaugeSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                gaugeSocket.connect((RFD850015314523021347_ADDR,11)) #RFD850015314523021347_ADDR, 1))
+                gaugeSocket.connect((RFD850022253520100892_ADDR,11)) #RFD850015314523021347_ADDR, 1))
                 
                 ''' while True:
                     rec = gaugeSocket.recv(1024)
@@ -448,15 +449,15 @@ class tagsRFD8500Reader():
             invlist = self.parseEPC(org_report)
             for item in invlist:
                 #rospy.logwarn("%s",item)
-                tagmsg = tagReader()
-                tagmsg.EPC = item['EPC']
-                tagmsg.PeakRSSI = str(item['RSSI'])
-                tagmsg.AntennaID = 'RFD8500_1' #all set to antenna RFD8500_1
-                tagmsg.Phase = str(-1 * float(item['phase'])/180.0* math.pi )  # report in radians,  
+                tagmsg = TagReader()
+                tagmsg.epc = item.get('EPC', '')
+                tagmsg.peak_rssi = str(item.get('RSSI', ''))
+                tagmsg.antenna_id = 'RFD8500_1' #all set to antenna RFD8500_1
+                tagmsg.phase = str(-1 * float(item.get('phase', 0.0)) / 180.0 * math.pi)  # report in radians
                                                     #for RFD8500 the phase follows: -1* (2pi(2R/lamda)+thea_niose )mod 2pi
                                                     #therefore, we need correct it by multiple -1
                 # tagmsg.ChannelID =str(item['channelId']) # wtf? This isnt even there
-                tagmsg.Channel = str(item['channelId'])
+                tagmsg.channel = str(item.get('channelId', ''))
                 #tagmsg.powerLevel = self.curTxPower 
                 now = self.node.get_clock().now().to_msg()
                 tagmsg.header.stamp = now
