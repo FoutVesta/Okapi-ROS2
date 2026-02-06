@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<library path="simple_panel">
+  <class
+    name="rviz_panel::simplePanel"
+    type="rviz_panel::simplePanel"
+    base_class_type="rviz_common::Panel">
+    <description>
+      RFID RViz Panel
+    </description>
+  </class>
+</library>
+
