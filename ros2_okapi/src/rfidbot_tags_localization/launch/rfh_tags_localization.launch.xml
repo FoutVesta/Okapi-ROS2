@@ -2,9 +2,10 @@
 <launch>
 
   <!-- Launch arguments -->
-  <arg name="odom_topic" default="/t265/odom/sample"/>
+  <!-- Use RGB-D odometry from rtabmap (child_frame_id == camera_link) so TF to the antenna exists -->
+  <arg name="odom_topic" default="/odom"/>
   <arg name="rfid_txpower" default="170"/>
-  <arg name="antenna_frameid" default="RFD8500_antena"/>
+  <arg name="antenna_frameid" default="RFD8500_footprint"/>
   <arg name="map_frameid" default="map"/>
   <arg name="rfid_ob_mindis" default="0.01"/>
   <arg name="localizer_type" default="3DRBGPU"/>
@@ -31,5 +32,3 @@
   </node>
 
 </launch>
-
-

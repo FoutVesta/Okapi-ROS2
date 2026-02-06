@@ -30,10 +30,10 @@ ament_python_install_package(${PROJECT_NAME})
 ## Install Python executables (nodes)
 ################################################
 
-install(PROGRAMS
-  rfidbot_tags_localization/rfh_tags_localization_main.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+#install(PROGRAMS
+#  rfidbot_tags_localization/rfh_tags_localization_main_ros2.py
+#  DESTINATION lib/${PROJECT_NAME}
+#)
 
 ################################################
 ## Install launch files (XML)

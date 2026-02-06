@@ -30,9 +30,17 @@ import time
 
 # tf transform still not working !
 class rfhposeShifter:
-    def __init__(self, node):
+    def __init__(self, node=None):
+        """
+        node: optional rclpy.node.Node. If None, create a lightweight helper node.
+        """
+        if node is None:
+            if not rclpy.ok():
+                rclpy.init(args=None)
+            node = Node('rfh_pose_shifter_helper')
         self.node = node
         self.logger = node.get_logger()
+        self.clock = node.get_clock()
         # tf buffer length (cache)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
@@ -75,7 +83,7 @@ class rfhposeShifter:
             # The tf should be based on the recorded pose  
             # provide the tf of transforming header.frame_id to child_frame_id in coordinate of header.frame_id
             tfSource2Global = TransformStamped()  # creating new transform msg
-            tfSource2Global.header.stamp = self.get_clock().now().to_msg()
+            tfSource2Global.header.stamp = self.clock.now().to_msg()
             tfSource2Global.header.frame_id = globalFrameId 
             tfSource2Global.child_frame_id = sourceFrameId 
             tfSource2Global.transform.translation = pose.pose.pose.position
@@ -182,7 +190,7 @@ class rfhposeShifter:
             # ))
 
         except Exception as e:
-            self.get_logger().warn(f'unable to do transform [{e}]')
+            self.logger.warn(f'unable to do transform [{e}]')
         
         return newPose
 
@@ -212,7 +220,7 @@ class rfhposeShifter:
                 pose.pose.pose.orientation.z,
                 pose.pose.pose.orientation.w])
             quat = tf_transformations.quaternion_from_euler(euler_p[0], euler_p[1], euler_p[2])
-            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.stamp = self.clock.now().to_msg()
             t.header.frame_id = globalFrameId
             t.child_frame_id = sourceFrameId
             t.transform.translation = pose.pose.pose.position
@@ -237,7 +245,7 @@ class rfhposeShifter:
             newPose.pose.orientation = tfAntenna2Global.transform.rotation
                      
         except Exception as e:
-            self.get_logger().warn(f'unable to do transform [{e}]')
+            self.logger.warn(f'unable to do transform [{e}]')
 
         return newPose
 

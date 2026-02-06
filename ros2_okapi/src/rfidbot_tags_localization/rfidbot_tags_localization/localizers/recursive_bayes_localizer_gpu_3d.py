@@ -23,7 +23,7 @@ import rclpy
 from rclpy.logging import get_logger
 
 from geometry_msgs.msg import PoseStamped, TransformStamped, PointStamped
-import tf_transformations # replaces 'from tf import TransformerROS, transformations'
+import tf_transformations  # quaternion math helpers
 
 import tf2_ros
 import tf2_geometry_msgs
@@ -77,51 +77,22 @@ class GPU3DRBTagLoclizer(rfh3DRBTagLoclizer):
         * output: return (trans, rot) or (None, None) if failed
         '''
         antennaPose = rawItem.antennaPose
-        res = TransformStamped()  # creating new transform msg
-        res.header.stamp = rclpy.time.Time().to_msg()  # ROS 2 time
-        res.header.frame_id = "global"                 # inverting frame_id and child_frame_id manually
-        res.child_frame_id = "rfid_model"
-        res.transform.translation = antennaPose.pose.pose.position
-        res.transform.rotation = antennaPose.pose.pose.orientation
-
-        transformer = TransformerROS()
-        transformer.setTransform(res)
-
-        try:
-            # Probe that the transform graph is consistent
-            _ = transformer.lookupTransform("rfid_model", "global", rclpy.time.Time().to_msg())
-        except Exception as e:
-            self._logwarn("tf failed, anpose(%.3f, %.3f, %.3f)",
-                          antennaPose.pose.pose.position.x,
-                          antennaPose.pose.pose.position.y,
-                          antennaPose.pose.pose.position.z)
-            self._logwarn("rotation(%.3f, %.3f, %.3f, %.3f)",
-                          res.transform.rotation.x,
-                          res.transform.rotation.y,
-                          res.transform.rotation.z,
-                          res.transform.rotation.w)
+        if antennaPose is None or antennaPose.pose is None:
             return None, None
 
-        # Extract a static (trans, rot) representing global->rfid_model
-        # NOTE: In the original ROS1 code, (trans, rot) came from lookupTransform.
-        # Here we just reuse the available transform we set above:
-        # "global" -> "rfid_model" == the 'res' transform inverted,
-        # but the code below expects (trans, rot) for composition; keep original behavior:
-        try:
-            (trans, rot) = transformer.lookupTransform("global", "rfid_model", rclpy.time.Time().to_msg())
-        except Exception:
-            # Fallback to manual extraction if needed
-            trans = (
-                res.transform.translation.x,
-                res.transform.translation.y,
-                res.transform.translation.z,
-            )
-            rot = (
-                res.transform.rotation.x,
-                res.transform.rotation.y,
-                res.transform.rotation.z,
-                res.transform.rotation.w,
-            )
+        # We only need a static transform (translation + rotation) from global -> antenna.
+        # Use the pose directly instead of the old ROS1 TransformerROS helper.
+        trans = (
+            antennaPose.pose.pose.position.x,
+            antennaPose.pose.pose.position.y,
+            antennaPose.pose.pose.position.z,
+        )
+        rot = (
+            antennaPose.pose.pose.orientation.x,
+            antennaPose.pose.pose.orientation.y,
+            antennaPose.pose.pose.orientation.z,
+            antennaPose.pose.pose.orientation.w,
+        )
         return (trans, rot)
 
     def getBelin3DModel(self, rawItem, esLoc, trans, rot):
@@ -134,7 +105,7 @@ class GPU3DRBTagLoclizer(rfh3DRBTagLoclizer):
         zeroBel = 0.1
 
         # Use quaternion to rotate esLoc into model frame then translate by trans
-        matrix = transformations.quaternion_matrix(rot)
+        matrix = tf_transformations.quaternion_matrix(rot)
         pos = np.array([esLoc[0], esLoc[1], esLoc[2], 0])  # homogeneous with w=0 for direction-like transform
         rotMatrix = np.array(matrix)
         postr = np.dot(rotMatrix, pos.T)
@@ -261,4 +232,3 @@ class GPU3DRBTagLoclizer(rfh3DRBTagLoclizer):
         self._logwarn("localize %s is done!", tagEPC)
 
         return (LOC_FLAG_LOCALIZED, posx, posy, posz)
-

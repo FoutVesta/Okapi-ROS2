@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
+  <!-- Allow odometry remap when used from higher-level launch files -->
+  <arg name="odom_topic" default="/odom"/>
+
   <node
     pkg="rfidbot_tags_localization"
     exec="rfh_tags_localization_main_ros2"
     name="rfidbot_tags_localization_main"
-    output="screen" />
+    output="screen">
+    <remap from="/odom" to="$(var odom_topic)"/>
+    <param name="antenna_frameid" value="RFD8500_footprint"/>
+    <param name="map_frameid" value="map"/>
+  </node>
 
 </launch>
-

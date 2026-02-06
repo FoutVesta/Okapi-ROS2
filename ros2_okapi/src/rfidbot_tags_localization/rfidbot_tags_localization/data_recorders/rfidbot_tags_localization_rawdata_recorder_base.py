@@ -26,9 +26,11 @@ class rfidbotTagLocRawDataRecordBase:
     Base class for RFID tag localization raw data recorder (ROS 2)
     """
 
-    def __init__(self, node):
+    def __init__(self, node, odom_topic="/odom", rfid_topic="/rfid_tags"):
         self.node = node
         self.logger = node.get_logger()
+        self.odom_topic = odom_topic
+        self.rfid_topic = rfid_topic
 
         self.tags = []
         self.uniqueTagsEPC = []     # unique tag EPCs; call getUniqueTags() to populate
@@ -39,29 +41,29 @@ class rfidbotTagLocRawDataRecordBase:
 
         # ROS 2 subscriptions
         self.node.create_subscription(
-            TagReader, '/rfid_tags', self.rfidtagsCallBack, 10
+            TagReader, self.rfid_topic, self.rfidtagsCallBack, 10
         )
         self.node.create_subscription(
-            Odometry, '/odom', self.poseCallback, 10
+            Odometry, self.odom_topic, self.poseCallback, 10
         )
         # self.create_subscription(PoseWithCovarianceStamped, '/pose', self.poseCallback, 10)
 
     # Simply append tag to array
     def rfidtagsCallBack(self, msg):
-        msg.EPC = msg.EPC.lower()
+        msg.epc = msg.epc.lower()
         self.tags.append(msg)
-        self.get_logger().warn(f"tag {len(self.tags)}")
+        self.logger.warn(f"tag {len(self.tags)}")
 
     def getUniqueTags(self):
         """
         From all recorded RFID tags, generate a unique tag list.
         """
-        self.get_logger().warn(f"tag number: {len(self.tags)}")
+        self.logger.warn(f"tag number: {len(self.tags)}")
         for tag in self.tags:
-            self.get_logger().warn(f"tag {tag.EPC}")
-            if tag.EPC not in self.uniqueTagsEPC:
-                self.uniqueTagsEPC.append(tag.EPC)
-        self.get_logger().warn(f"Total scanned unique tag number: {len(self.uniqueTagsEPC)}")
+            self.logger.warn(f"tag {tag.epc}")
+            if tag.epc not in self.uniqueTagsEPC:
+                self.uniqueTagsEPC.append(tag.epc)
+        self.logger.warn(f"Total scanned unique tag number: {len(self.uniqueTagsEPC)}")
 
     def isPoseValid(self, pose):
         if (
@@ -88,23 +90,23 @@ class rfidbotTagLocRawDataRecordBase:
 
     def saveRawData2File(self):
         if self.rawDataFileAddr is None:
-            self.get_logger().warn('the file address is None!')
+            self.logger.warn('the file address is None!')
             return
 
         with open(self.rawDataFileAddr, 'wb') as f:
             pickle.dump(self.tagLocRawData, f)
-        self.get_logger().warn(f"recorder: save raw data to file {self.rawDataFileAddr}")
+        self.logger.warn(f"recorder: save raw data to file {self.rawDataFileAddr}")
 
     def readRawDataFromFile(self):
         if self.rawDataFileAddr is None:
-            self.get_logger().warn('the file address is None!')
+            self.logger.warn('the file address is None!')
             return
 
         with open(self.rawDataFileAddr, 'rb') as f:
             self.tagLocRawData = pickle.load(f)
 
         recordLength = len(self.tagLocRawData) if self.tagLocRawData is not None else 0
-        self.get_logger().warn(
+        self.logger.warn(
             f"recorder: read raw data from file {self.rawDataFileAddr}, with length {recordLength}"
         )
 
@@ -135,4 +137,3 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-

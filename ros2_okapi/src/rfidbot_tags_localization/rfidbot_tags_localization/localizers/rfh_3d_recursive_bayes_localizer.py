@@ -136,44 +136,41 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         return newRawData
 
     def generateTf(self, rawItem):
+        """
+        Return (trans, rot) tuple representing the antenna pose in the global frame.
+        """
         antennaPose = rawItem.antennaPose
-        res = TransformStamped()
-        res.header.stamp = rclpy.time.Time().to_msg()
-        res.header.frame_id = "global"
-        res.child_frame_id = "rfid_model"
-        res.transform.translation = antennaPose.pose.pose.position
-        res.transform.rotation = antennaPose.pose.pose.orientation
-        transformer = TransformerROS()
-        transformer.setTransform(res)
-
-        try:
-            _ = transformer.lookupTransform("rfid_model", "global", rclpy.time.Time().to_msg())
-        except Exception as e:
-            self._logwarn("tf failed (%.3f,%.3f,%.3f): %s",
-                          antennaPose.pose.pose.position.x,
-                          antennaPose.pose.pose.position.y,
-                          antennaPose.pose.pose.position.z, str(e))
+        if antennaPose is None or antennaPose.pose is None:
             return None
-        return transformer
+        trans = (
+            antennaPose.pose.pose.position.x,
+            antennaPose.pose.pose.position.y,
+            antennaPose.pose.pose.position.z,
+        )
+        rot = (
+            antennaPose.pose.pose.orientation.x,
+            antennaPose.pose.pose.orientation.y,
+            antennaPose.pose.pose.orientation.z,
+            antennaPose.pose.pose.orientation.w,
+        )
+        return (trans, rot)
 
-    def getBelin3DModel(self, rawItem, esLoc, transformer):
+    def getBelin3DModel(self, rawItem, esLoc, trans, rot):
+        """
+        Compute belief value at esLoc given antenna pose (trans, rot).
+        """
         zeroBel = 0.1
-        gpoint = PointStamped()
-        gpoint.point.x, gpoint.point.y, gpoint.point.z = esLoc
-        gpoint.header.stamp = rclpy.time.Time().to_msg()
-        gpoint.header.frame_id = "global"
-        try:
-            mpoint = transformer.transformPoint("rfid_model", gpoint)
-        except Exception:
-            self._logwarn("tf failed, antenna pose (%.3f,%.3f,%.3f)",
-                          rawItem.antennaPose.pose.pose.position.x,
-                          rawItem.antennaPose.pose.pose.position.y,
-                          rawItem.antennaPose.pose.pose.position.z)
-            return 1
+        # Rotate esLoc into antenna frame using quaternion, then translate by antenna pose.
+        matrix = tf_transformations.quaternion_matrix(rot)
+        pos = [esLoc[0], esLoc[1], esLoc[2], 0.0]
+        postr = matrix.dot(pos)
+        x = trans[0] + postr[0]
+        y = trans[1] + postr[1]
+        z = trans[2] + postr[2]
 
-        model_x = mpoint.point.y + self.RFID3DModel.AntennaLoc[0]
-        model_y = mpoint.point.x + self.RFID3DModel.AntennaLoc[1]
-        model_z = mpoint.point.z + self.RFID3DModel.AntennaLoc[2]
+        model_x = y + self.RFID3DModel.AntennaLoc[0]
+        model_y = x + self.RFID3DModel.AntennaLoc[1]
+        model_z = z + self.RFID3DModel.AntennaLoc[2]
 
         mapIdCol = int(round(model_y / self.RFID3DModel.BeliefMapResolution))
         mapIdRow = int(round(model_x / self.RFID3DModel.BeliefMapResolution))
@@ -197,9 +194,9 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         Bel = self.RFID3DModel.BinaryMap[PLId][mapIdRow][mapIdCol][mapIdVel]
         return Bel if Bel != 0 else zeroBel
 
-    def projectARawItem2Map(self, rawItem, transformer):
+    def projectARawItem2Map(self, rawItem, trans, rot):
         for id, esLoc in enumerate(self.estimatedLocation):
-            meas = self.getBelin3DModel(rawItem, esLoc, transformer)
+            meas = self.getBelin3DModel(rawItem, esLoc, trans, rot)
             self.antennaBelInmap[id]['bel'] = meas
         self._logwarn("project (%.3f,%.3f,%.3f) model to map",
                       rawItem.antennaPose.pose.pose.position.x,
@@ -208,10 +205,10 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         self.debuger.visualBelin3DMap(self.antennaBelInmap, 'y')
         self.debuger.visualARawDatain3Dmap(rawItem)
 
-    def belUpdate(self, id, esLoc, rawItem, transformer):
+    def belUpdate(self, id, esLoc, rawItem, trans, rot):
         if self.esLocBel[id]['bel'] < BEL_THES:
             return
-        meas = self.getBelin3DModel(rawItem, esLoc, transformer)
+        meas = self.getBelin3DModel(rawItem, esLoc, trans, rot)
         self.esLocBel[id]['bel'] *= meas
 
     def normalizeBelByMaxValue(self):
@@ -290,10 +287,11 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
             g2m_tf = self.generateTf(rData)
             if g2m_tf is None:
                 continue
+            trans, rot = g2m_tf
 
             i += 1
             for idx, esLoc in enumerate(self.estimatedLocation):
-                self.belUpdate(idx, esLoc, rData, g2m_tf)
+                self.belUpdate(idx, esLoc, rData, trans, rot)
 
             if DEBUGET_SWITCH:
                 self.debuger.visualBelin3DMap(self.esLocBel)
@@ -308,4 +306,3 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         (posx, posy, posz) = self.estimatePosByAverageThresBel(self.esLocBel, Thres)
         self._logwarn("localize %s is done!", tagEPC)
         return (LOC_FLAG_LOCALIZED, posx, posy, posz)
-

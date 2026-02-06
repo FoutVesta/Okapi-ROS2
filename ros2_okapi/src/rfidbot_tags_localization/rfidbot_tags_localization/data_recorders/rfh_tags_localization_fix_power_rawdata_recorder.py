@@ -27,8 +27,8 @@ from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rf
 
 
 class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
-    def __init__(self, node, rate_ratio, rate):
-        super().__init__(node)
+    def __init__(self, node, rate_ratio, rate, odom_topic="/odom", rfid_topic="/rfid_tags"):
+        super().__init__(node, odom_topic=odom_topic, rfid_topic=rfid_topic)
 
         self.name = "rfh fix power raw data recorder"
         self.rate_ratio = rate_ratio
@@ -79,12 +79,19 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
 
     def rfidtagsCallBack(self, msg):
         if not self.isResetPower:
+            self.node.get_logger().warn("RFID tag received before power reset; ignoring.")
             return
-        msg.EPC = msg.EPC.lower()
+        msg.epc = msg.epc.lower()
         tag = msg
         candidatePose = self.currentPose
+        if candidatePose is None:
+            self.node.get_logger().warn("No current pose; recording tag with empty pose.")
         tmpRawData = self.initARawDataByTagandPose(tag, candidatePose)
         self.tagLocRawData.append(tmpRawData)
+        has_pose = tmpRawData.antennaPose is not None
+        self.node.get_logger().info(
+            f"Recorded tag {tag.epc}, total raw entries: {len(self.tagLocRawData)}, with pose: {has_pose}"
+        )
 
     def getUniqueTags(self):
         for _, rawData in enumerate(self.tagLocRawData):
@@ -103,7 +110,7 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
         if rawDataFile is None:
             rawDataFile = self.rawDataFileAddr
         if not os.path.isfile(rawDataFile):
-            self.get_logger().warn(f"Raw data file {rawDataFile} does not exist")
+            self.node.get_logger().warn(f"Raw data file {rawDataFile} does not exist")
             return
         with open(rawDataFile, 'rb') as f:
             self.tagLocRawData = pickle.load(f)
@@ -112,14 +119,14 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
 
     def initARawDataByTagandPose(self, tag, candidatePose):
         tmpRawData = rfidbotTagsLocReadRateRawData()
-        tmpRawData.TagEpc = tag.EPC
-        tmpRawData.antennaID = tag.AntennaID
+        tmpRawData.TagEpc = tag.epc
+        tmpRawData.antennaID = tag.antenna_id
         tmpRawData.antennaPose = self.tfCameraPose2AntennaPose(candidatePose, tmpRawData.antennaID)
         tmpRawData.readRate = 1
         tmpRawData.powerLevel = self.power
-        tmpRawData.phase = tag.Phase
-        tmpRawData.channelID = tag.Channel
-        tmpRawData.peakRSSI = tag.PeakRSSI
+        tmpRawData.phase = tag.phase
+        tmpRawData.channelID = tag.channel
+        tmpRawData.peakRSSI = tag.peak_rssi
         return tmpRawData
 
     def tfCameraPose2AntennaPose(self, candidatePose, antennaID):
@@ -142,4 +149,3 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-
