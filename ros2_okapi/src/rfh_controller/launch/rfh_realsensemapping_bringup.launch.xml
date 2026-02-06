@@ -12,11 +12,11 @@
     <!-- Arguments -->
     <!-- ========================= -->
     <arg name="use_rviz"                    default="true"/>
-    <arg name="camera"                     default="camera"/>
+    <arg name="camera"                     default="d400"/>
     <arg name="rfid_txpower"               default="130"/>
     <arg name="localization"               default="false"/>
 
-    <arg name="clip_distance"              default="-2"/>
+    <arg name="clip_distance"              default="-1.0"/>
     <arg name="use_rtabmapviz"             default="false"/>
 
     <!-- ========================= -->
@@ -26,16 +26,22 @@
         file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
 
         <arg name="camera_name"      value="$(var camera)"/>
+        <arg name="camera_namespace" value=""/>
         <arg name="device_type"      value="d435i"/>
 
-        <!-- Enable IMU -->
+        <!-- IMU -->
         <arg name="enable_gyro"      value="true"/>
         <arg name="enable_accel"     value="true"/>
-        <arg name="unite_imu_method" value="2"/>
-
+        
         <!-- Enable streams -->
         <arg name="enable_depth"     value="true"/>
         <arg name="enable_color"     value="true"/>
+        <arg name="enable_sync"      value="true"/>
+        <!-- Match RGB/Depth profiles to stabilize odometry -->
+        <arg name="rgb_camera.color_profile"   value="640x480x30"/>
+        <arg name="depth_module.depth_profile" value="640x480x30"/>
+        <arg name="align_depth.enable" value="true"/>
+        <arg name="pointcloud.enable" value="true"/>
         <arg name="clip_distance"    value="$(var clip_distance)"/>
 
     </include>
@@ -47,7 +53,9 @@
         file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
 
         <arg name="rtabmap_args"      value="--delete_db_on_start"/>
-
+        <!-- Robust fast-motion preset -->
+        <arg name="odom_args" value="--ros-args -p OdomF2M/MinInliers:=6 -p OdomF2M/MaxNewFeatures:=1200 -p Vis/MaxFeatures:=2500 -p Odom/ImageDecimation:=1 -p Odom/ResetCountdown:=1 -p Odom/Strategy:=1"/>
+        
         <!-- Topics -->
         <arg name="rgb_topic"         value="/$(var camera)/color/image_raw"/>
         <arg name="depth_topic"       value="/$(var camera)/aligned_depth_to_color/image_raw"/>
@@ -58,12 +66,23 @@
 
         <!-- Visual + IMU odometry -->
         <arg name="visual_odometry"   value="true"/>
-        <arg name="imu_topic"         value="/$(var camera)/imu"/>
+        <!-- Keep IMU topic default; no IMU data is used -->
+        <arg name="imu_topic"         value="/imu/data"/>
+        <!-- Disable rgbd_sync to avoid empty RGBD frames; use direct RGB+Depth sync -->
+        <arg name="rgbd_sync"         value="false"/>
+        <arg name="subscribe_rgbd"    value="false"/>
+        <arg name="approx_sync"       value="true"/>
+        <!-- RealSense depth is 16UC1 in millimeters; scale to meters -->
+        <arg name="depth_scale"       value="0.001"/>
+        <!-- Tight sync window to reject misaligned RGB/Depth pairs -->
+        <arg name="approx_sync_max_interval" value="0.015"/>
 
         <!-- UI -->
-        <arg name="queue_size"        value="200"/>
-        <arg name="rviz"              value="$(var use_rviz)"/>
-        <arg name="rtabmapviz"        value="$(var use_rtabmapviz)"/>
+        <arg name="queue_size"        value="100"/>
+        
+        <arg name="rtabmap_viz"        value="false"/>
+        <arg name="rviz"              value="false"/>
+
         <arg name="rviz_cfg"
              value="$(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
 
@@ -84,7 +103,13 @@
         exec="static_transform_publisher"
         name="camera_to_rfidreader"
         args="0 0 0 0 0 0 $(var camera)_link RFD8500_footprint"/>
+        
+    <node
+        if="$(var use_rviz)"
+        pkg="rviz2"
+        exec="rviz2"
+        name="rviz2_okapi"
+        output="screen"
+        args="-d $(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
 
 </launch>
-
-
