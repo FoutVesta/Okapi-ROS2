@@ -7,25 +7,25 @@ Okapi Localization for ROS2 Humble Distribution
 ```bash
   sudo apt install ros-humble-librealsense2*
 ```
-3. Install ROS Wrapper for RealSense Cameras (from source since debian packages doesnt work for some reason)
+2. Install ROS Wrapper for RealSense Cameras (from source since debian packages doesnt work for some reason)
 ```bash
   mkdir -p ~/realsense_ws/src
   cd ~/realsense_ws/src/
   git clone https://github.com/realsenseai/realsense-ros.git -b ros2-master
   cd ~/realsense_ws
 ```
-5. Install dependencies
+3. Install dependencies
 ```bash
   sudo apt-get install python3-rosdep -y
   sudo rosdep init 
   rosdep update 
   rosdep install -i --from-path src --rosdistro $ROS_DISTRO --skip-keys=librealsense2 -y
 ```
-7. Build
+4. Build
 ```bash
   colcon build
 ```
-9. Source Environment
+5. Source Environment
 ```bash
   ROS_DISTRO=humble
   source /opt/ros/$ROS_DISTRO/setup.bash
@@ -33,13 +33,14 @@ Okapi Localization for ROS2 Humble Distribution
   . install/local_setup.bash
 ```
 
-Bluetooth for RFD8500 Reader (if needed)
+6. Bluetooth for RFD8500 Reader (if needed)
 ```bash
   sudo apt update
   sudo apt install bluetooth bluez bluez-tools rfkill -y
 ```
 
-Imu Madgwick Filter 
+7. Imu Madgwick Filter
+RealSense wrapper has built in functionality to unite the gyro and acceleration using unite_imu_method set to '2' to enable linear interpolation. However, to use this combined imu data it requires orientation data as well, which realsense does not do by itself. So, we use Madgwick to create orientation data united imu topic. imu_topic therefore is set to /d400/imu_filtered, not /d400/imu.
 ```bash
   sudo apt install ros-humble-imu-filter-madgwick
 ```
