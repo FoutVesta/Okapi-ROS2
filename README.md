@@ -67,4 +67,4 @@ Imu Madgwick Filter
 ```
 
 # NOTES
--Because only the D435i is the only camera in use for this build, it can be quite slow because its being used to capture all needed data, so it cannot be moved very fast. I will work on a branch that uses Foxy distribution so we can continue using the t265.
+- Because only the D435i is the only camera in use for this build, it can be quite slow because its being used to capture all needed data, so it cannot be moved very fast. I will work on a branch that uses Foxy distribution so we can continue using the t265.
