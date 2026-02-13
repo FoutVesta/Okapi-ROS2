@@ -1,7 +1,7 @@
-## Okapi-ROS2
+# Okapi-ROS2
 Okapi Localization for ROS2 Humble Distribution
 
-# Camera Setup
+## Camera Setup
 
 1. Install the RealSense SDK
 ```bash
@@ -44,7 +44,7 @@ Imu Madgwick Filter
   sudo apt install ros-humble-imu-filter-madgwick
 ```
 
-# Cloning and building the Repository
+## Cloning and building the Repository
 ```bash
   mkdir -p ~/okapiros2_ws
   cd ~/okapiros2_ws
@@ -54,7 +54,7 @@ Imu Madgwick Filter
   source /opt/ros/humble/setup.bash
 ```
 
-# Running
+## Running
 1. Run this in first terminal
 ```bash
   source install/setup.bash
