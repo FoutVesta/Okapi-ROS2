@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+* File Name: zebraRFD8500reader_description.launch
+* Description:  Launches the zebara RFD8500 reader's transforms built from the zebraRFD8500reader.xacro file
+* Author: Jian Zhang
+* Date: 5-25-2020
+-->
+
+<launch>
+
+    <node
+        pkg="robot_state_publisher"
+        exec="robot_state_publisher"
+        name="robot_state_publisher"
+        output="screen">
+
+        <param
+            name="robot_description"
+            value="$(command 'xacro $(find-pkg-share rfh_handheld_description)/urdf/zebraRFD8500reader.xacro')" />
+
+        <param
+            name="publish_frequency"
+            value="10.0" />
+
+    </node>
+
+</launch>
+

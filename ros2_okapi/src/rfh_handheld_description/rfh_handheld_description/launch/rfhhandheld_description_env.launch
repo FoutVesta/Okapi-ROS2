@@ -1,0 +1,16 @@
+<!--
+* File Name: rfhhandheld_description.launch
+* Description:  Launches the Okapi handheld transforms built from the rfhHandheld.xacro file
+* Author: Jian Zhang
+* Date: 1-5-2017
+-->
+
+<launch>
+        <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find
+                rfh_handheld_description)/urdf/environment.xacro'" />
+
+        <node pkg="robot_state_publisher" type="robot_state_publisher"
+                name="robot_state_publisher_1" output="screen">
+                <param name="publish_frequency" type="double" value="10.0" />
+        </node>
+</launch>
