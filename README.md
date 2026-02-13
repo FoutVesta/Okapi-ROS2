@@ -50,10 +50,6 @@ Imu Madgwick Filter
   cd ~/okapiros2_ws
   git clone https://github.com/FoutVesta/Okapi-ROS2.git
   cd ~/ros2_okapi/src
-```
-  
-  Build Okapi ROS2
-```bash
   colcon build
   source /opt/ros/humble/setup.bash
 ```
