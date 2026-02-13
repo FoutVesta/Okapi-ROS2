@@ -72,3 +72,4 @@ RealSense wrapper has built in functionality to unite the gyro and acceleration 
 
 - Because only the D435i is the only camera in use for this build, it can be quite slow because its being used to capture all needed data, so it cannot be moved very fast. I will work on a branch that uses Foxy distribution so we can continue using the t265.
 - You can tweak the settings of the D435i via line 79 in the rfh_realsensemapping_bringup.launch.xml to make the camera better handle faster motion. It's not perfect though, so using the t265 is the preferable choice.
+- Because the camera is not good at handling fast movements it does't capture positional data as well as it should, which causes localization of tags to be off by a little bit sometimes.
