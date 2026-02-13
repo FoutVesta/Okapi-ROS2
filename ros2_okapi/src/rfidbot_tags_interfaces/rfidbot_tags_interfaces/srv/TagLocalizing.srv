@@ -1,0 +1,7 @@
+string tag_epc
+---
+string tag_epc
+int32 localizing_flag
+float64 posx
+float64 posy
+float64 posz
