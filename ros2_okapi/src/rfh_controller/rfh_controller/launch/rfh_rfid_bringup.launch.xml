@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!--
+       This is the launch file to bring up:
+        1. rfid reader
+        2. rfid localizer
+    -->
+
+    <arg name="use_rviz"                    default="true"/>    <!-- only provide the control of launch rivz to enalbe start without rviz -->
+    <arg name="camera"                      default="camera"/>  <!-- D435i camera name -->
+    <!-- <arg name="rfid_txpower"                default="170"/>-->     <!-- for RFD8500 is 130 to 240,for fix reader max 200,defualt 180  RFD 8500 localization, fix reader 80,110,140,170 -->
+    <arg name="rfid_txpower"                default="80"/>
+    <arg name="enable_RFD8500"              default="true"/>    <!-- true launch RFD8500, flase launch fix reader -->
+   
+
+   
+    <!-- launch RFID localizer -->
+    <group if="$(var enable_RFD8500)">
+        <include file="$(find-pkg-share rfidbot_tags_localization)/launch/rfh_tags_localization.launch.xml">
+            <!-- Odometry from RealSense wrapper (nav_msgs/Odometry) -->
+            <arg name="odom_topic"          value="odom"/>
+            <arg name="rfid_txpower"        value="$(var rfid_txpower)"/>
+            <arg name="reader_type"         value="RFD8500"/>  
+        </include>
+    </group>
+
+    <!-- <group unless="$(var enable_RFD8500)">
+        <include file="$(find-pkg-share rfidbot_tags_localization)/launch/rfh_tags_localization.launch.xml">
+            <arg name="odom_topic"          value="/d400/imu_filtered"/>
+            <arg name="rfid_txpower"        value="$(var rfid_txpower)"/>
+            <arg name="reader_type"         value="Zebra9600-AN720"/>  
+        </include>
+    </group>
+    -->
+    
+    <!-- launch RFID reader -->
+    <group if="$(var enable_RFD8500)">
+        <include file="$(find-pkg-share rfidbot_tags_reader)/launch/rfidbot_tags_reading_RFD8500.launch.xml">
+                <arg name="rfid_txpower"          value="$(var rfid_txpower)"/>
+        </include>
+    </group>
+    
+    <group unless="$(var enable_RFD8500)">
+        <include file="$(find-pkg-share rfidbot_tags_reader)/launch/rfidbot_tags_reading_py.launch.xml">
+        </include>
+    </group>
+
+</launch>

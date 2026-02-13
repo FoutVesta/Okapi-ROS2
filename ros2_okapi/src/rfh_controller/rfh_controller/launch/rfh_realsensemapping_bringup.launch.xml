@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!--
+       This is the launch file to bring up:
+        1. the realsense camera (d435i ONLY)
+        2. rtabmaps with mapping/localization function
+        3. Zebra reader description
+        4. static tf among the reader and camera (thus also with the map)
+    -->
+
+    <!-- ========================= -->
+    <!-- Arguments -->
+    <!-- ========================= -->
+    <arg name="use_rviz"                    default="true"/>
+    <arg name="camera"                     default="d400"/>
+    <arg name="rfid_txpower"               default="130"/>
+    <arg name="localization"               default="false"/>
+
+    <arg name="clip_distance"              default="-1.0"/>
+    <arg name="use_rtabmapviz"             default="false"/>
+    <!-- IMU filtering -->
+    <arg name="imu_raw_topic"              default="/d400/imu"/>
+    <!-- keep the filtered topic absolute so downstream nodes can see it -->
+    <arg name="imu_filtered_topic"         default="/d400/imu_filtered"/>
+    <arg name="imu_use_mag"                default="false"/>
+
+    <!-- ========================= -->
+    <!-- RealSense D435i ONLY -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+
+        <arg name="camera_name"      value="$(var camera)"/>
+        <arg name="camera_namespace" value=""/>
+        <arg name="device_type"      value="d435i"/>
+
+        <!-- IMU -->
+        <arg name="enable_gyro"      value="true"/>
+        <arg name="enable_accel"     value="true"/>
+        
+        <!-- Enable streams -->
+        <arg name="enable_depth"     value="true"/>
+        <arg name="enable_color"     value="true"/>
+        <arg name="enable_sync"      value="true"/>
+        <!-- Match RGB/Depth profiles; use 60 FPS to better handle fast handheld motion -->
+        <arg name="rgb_camera.color_profile"   value="848x480x60"/>
+        <arg name="depth_module.depth_profile" value="848x480x60"/>
+        <arg name="align_depth.enable" value="true"/>
+        <arg name="pointcloud.enable" value="true"/>
+        <arg name="clip_distance"    value="$(var clip_distance)"/>
+
+    </include>
+    
+    <!-- IMU filter (Madgwick) to provide orientation -->
+    <node
+        pkg="imu_filter_madgwick"
+        exec="imu_filter_madgwick_node"
+        name="imu_filter_madgwick"
+        output="screen">
+        <remap from="/imu/data_raw" to="$(var imu_raw_topic)"/>
+        <remap from="/imu/data"     to="$(var imu_filtered_topic)"/>
+        <param name="use_mag" value="$(var imu_use_mag)"/>
+        <param name="world_frame" value="enu"/>
+        <param name="publish_tf" value="false"/>
+    </node>
+    
+    <!-- ========================= -->
+    <!-- RTAB-Map -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+
+        <!-- No namespace so topics come out at root (/odom, /map, etc.) -->
+        <arg name="namespace"        value=""/>
+
+        <arg name="rtabmap_args"      value="--delete_db_on_start"/>
+        <!-- Robust fast-motion preset -->
+        <!-- Pass IMU into RTAB-Map odom; odom_args is forwarded to rtabmap_odom node -->
+        <arg name="odom_args" value="--ros-args -p OdomF2M/MinInliers:=5 -p OdomF2M/MaxNewFeatures:=2200 -p Vis/MaxFeatures:=3200 -p Vis/InlierDistance:=0.08 -p Vis/MinInliers:=10 -p Odom/ImageDecimation:=1 -p Odom/ResetCountdown:=3 -p Odom/Strategy:=1 -p imu_topic:=$(var imu_filtered_topic) -p odom_frame_id:=odom"/>
+        
+        <!-- Topics -->
+        <arg name="rgb_topic"         value="/$(var camera)/color/image_raw"/>
+        <arg name="depth_topic"       value="/$(var camera)/aligned_depth_to_color/image_raw"/>
+        <arg name="camera_info_topic" value="/$(var camera)/color/camera_info"/>
+
+        <!-- Frames -->
+        <!-- Use base_link as the robot body frame; the camera hangs off it via a static TF -->
+        <arg name="frame_id"          value="base_link"/>
+
+        <!-- Visual + IMU odometry -->
+        <arg name="visual_odometry"   value="true"/>
+        <!-- RTAB-Map publishes nav_msgs/Odometry here; match RealSense default odom topic (/d400/odom/sample) -->
+        <arg name="odom_topic"         value="odom"/>
+        <!-- Disable rgbd_sync to avoid empty RGBD frames; use direct RGB+Depth sync -->
+        <arg name="rgbd_sync"         value="false"/>
+        <arg name="subscribe_rgbd"    value="false"/>
+        <arg name="approx_sync"       value="true"/>
+        <!-- RealSense depth is 16UC1 in millimeters; scale to meters -->
+        <arg name="depth_scale"       value="0.001"/>
+        <!-- Sync window; tighten to drop mis-synced RGB/Depth pairs -->
+        <arg name="approx_sync_max_interval" value="0.015"/>
+
+        <!-- UI -->
+        <arg name="queue_size"        value="100"/>
+        
+        <arg name="rtabmap_viz"        value="false"/>
+        <arg name="rviz"              value="false"/>
+
+        <arg name="rviz_cfg"
+             value="$(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
+
+    </include>
+
+    <!-- ========================= -->
+    <!-- Zebra RFID description -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share rfh_handheld_description)/launch/zebraRFD8500reader_description.launch.xml"/>
+
+    <!-- ========================= -->
+    <!-- Static TF (ROS2 style) -->
+    <!-- camera_link -> RFD8500_footprint -->
+    <!-- ========================= -->
+    <!-- base_link -> camera_link -->
+    <node
+        pkg="tf2_ros"
+        exec="static_transform_publisher"
+        name="base_to_camera"
+        args="0 0 0 0 0 0 base_link $(var camera)_link"/>
+
+    <node
+        pkg="tf2_ros"
+        exec="static_transform_publisher"
+        name="camera_to_rfidreader"
+        args="0 0 0 0 0 0 $(var camera)_link RFD8500_footprint"/>
+        
+    <node
+        if="$(var use_rviz)"
+        pkg="rviz2"
+        exec="rviz2"
+        name="rviz2_okapi"
+        output="screen"
+        args="-d $(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
+
+</launch>
