@@ -9,11 +9,16 @@
 * Version 2.0 for ROS2 Humble
 '''
 
-import sys, os
+import os
 import pickle
 import time
 import rclpy
 from rclpy.logging import get_logger
+from rclpy.node import Node
+from ament_index_python.packages import get_package_share_directory
+import importlib
+import sys
+import types
 
 from geometry_msgs.msg import PoseStamped, TransformStamped, PointStamped
 import tf_transformations  # replaces `tf.transformations`
@@ -27,11 +32,13 @@ from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rf
 from rfidbot_tags_localization.libs.rfidbot_tags_debuger import RRRBDebuger
 
 # Paths
-path = sys.path[0]
-pardir = os.path.abspath(os.path.join(path, os.pardir))
+module_dir = os.path.dirname(os.path.abspath(__file__))
+pardir = os.path.abspath(os.path.join(module_dir, os.pardir))
+# Source tree root (one level above the Python package folder)
+root_dir = os.path.abspath(os.path.join(pardir, os.pardir))
 RFID3DModelPathDict = {
-    "RFD8500": pardir + '/data/antenna3dModel_RFD8500.txt',
-    "Zebra9600-AN720": pardir + '/data/antenna3dModel.txt'
+    "RFD8500": os.path.join(pardir, 'data', 'antenna3dModel_RFD8500.txt'),
+    "Zebra9600-AN720": os.path.join(pardir, 'data', 'antenna3dModel.txt')
 }
 
 # Localization flag settings
@@ -49,14 +56,22 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
     * class: rfh3DRBTagLoclizer
     * based on the RFusion handheld raw data using recursive Bayesian updating to localize a tag in 3D
     '''
-    def __init__(self):
-        super().__init__()
+    def __init__(self, node: Node):
+        #super().__init__()
+        self.node = node
         self.name = "3D tag localizer"
         self.logger = get_logger('rfh3DRBTagLoclizer')
 
         # Defaults (these parameters were ROS1 params)
         self.minRfidObDis = 0.01
         self.readerType = "RFD8500"
+
+        # Allow overriding the antenna model location at runtime
+        try:
+            self.declare_parameter('antenna_model_path', '')
+        except Exception:
+            # If running outside a Node context (e.g., unit tests), skip declaration
+            pass
 
         if self.readerType not in RFID3DModelPathDict:
             self._logwarn("Reader type %s not valid. Defaulting to RFD8500", self.readerType)
@@ -75,7 +90,53 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         self.logger.info(msg % args if args else msg)
 
     def loadRFID3DModel(self):
-        loadAddr = RFID3DModelPathDict[self.readerType]
+        # Ensure pickled antenna model can import its module without ROS1 rospy
+        if 'rospy' not in sys.modules:
+            sys.modules['rospy'] = types.SimpleNamespace()  # stub for ROS1 dependency
+        try:
+            # Make sure the pickle module name resolves
+            if 'rfidbot_antenna_model_base' not in sys.modules:
+                importlib.import_module('rfh_share_lib.rfidbot_antenna_model_base')
+                sys.modules['rfidbot_antenna_model_base'] = sys.modules['rfh_share_lib.rfidbot_antenna_model_base']
+        except Exception:
+            # Best effort; fallback to whatever is on sys.path
+            pass
+
+        # Allow overriding via ROS param and try common install/share locations
+        override_path = None
+        try:
+            override_path = self.get_parameter('antenna_model_path').get_parameter_value().string_value
+        except Exception:
+            pass
+
+        candidate_paths = []
+        if override_path:
+            candidate_paths.append(override_path)
+        candidate_paths.append(RFID3DModelPathDict[self.readerType])
+        candidate_paths.append(os.path.join(root_dir, 'data', 'antenna3dModel_RFD8500.txt'))
+        candidate_paths.append(os.path.join(root_dir, 'data', 'antenna3dModel.txt'))
+
+        # Also check share directory if installed
+        try:
+            share_dir = get_package_share_directory('rfidbot_tags_localization')
+            candidate_paths.append(os.path.join(share_dir, 'data', 'antenna3dModel_RFD8500.txt'))
+            candidate_paths.append(os.path.join(share_dir, 'data', 'antenna3dModel.txt'))
+        except Exception:
+            pass
+
+        loadAddr = None
+        for p in candidate_paths:
+            if p and os.path.isfile(p):
+                loadAddr = p
+                break
+
+        if loadAddr is None:
+            searched = "\n  - ".join(candidate_paths)
+            raise FileNotFoundError(
+                f"Antenna model file not found. Searched:\n  - {searched}\n"
+                "Provide the model file (pickled antenna3dModel_*.txt) or set parameter 'antenna_model_path'."
+            )
+
         with open(loadAddr, 'rb') as f:
             self.RFID3DModel = pickle.load(f)
             self._logwarn("Read antenna model from file %s", loadAddr)

@@ -18,7 +18,10 @@
 
 import rclpy
 from rclpy.logging import get_logger
-import sys, os, pickle, math, time, itertools
+from rclpy.node import Node
+from ament_index_python.packages import get_package_share_directory
+import importlib, types, sys
+import os, pickle, math, time, itertools
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from geometry_msgs.msg import PoseStamped, TransformStamped, PointStamped
@@ -33,9 +36,10 @@ from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rf
 from rfidbot_tags_localization.libs.rfidbot_tags_debuger import RRRBDebuger
 
 # ====== CONSTANTS ======
-path = sys.path[0]
-pardir = os.path.abspath(os.path.join(path, os.pardir))
-RFID3DModelPath = pardir + '/data/antenna3dModel_RFD8500.txt'
+module_dir = os.path.dirname(os.path.abspath(__file__))
+pardir = os.path.abspath(os.path.join(module_dir, os.pardir))
+RFID3DModelPath = os.path.join(pardir, 'data', 'antenna3dModel_RFD8500.txt')
+root_dir = os.path.abspath(os.path.join(pardir, os.pardir))
 
 LOC_FLAG_NO_RAW_DATA = 0
 LOC_FLAG_ONLY_INV = 1
@@ -58,8 +62,8 @@ class phDiffTagLoclizer(rfidbotRBLocalizeATag):
     * Class: phDiffTagLoclizer
     * Based on RF phase observation and recursive Bayesian updating to localize a tag in 3D.
     '''
-    def __init__(self):
-        super().__init__()
+    def __init__(self, node: Node):
+        super().__init__(node)
         self.name = "3D tag localizer"
         self.logger = get_logger('phDiffTagLoclizer')
         self.RFID3DModel = None
@@ -78,9 +82,36 @@ class phDiffTagLoclizer(rfidbotRBLocalizeATag):
     # MODEL LOADING
     # ===================
     def loadRFID3DModel(self):
-        with open(RFID3DModelPath, 'rb') as f:
+        if 'rospy' not in sys.modules:
+            sys.modules['rospy'] = types.SimpleNamespace()
+        try:
+            if 'rfidbot_antenna_model_base' not in sys.modules:
+                importlib.import_module('rfh_share_lib.rfidbot_antenna_model_base')
+                sys.modules['rfidbot_antenna_model_base'] = sys.modules['rfh_share_lib.rfidbot_antenna_model_base']
+        except Exception:
+            pass
+
+        candidate_paths = [
+            RFID3DModelPath,
+            os.path.join(root_dir, 'data', 'antenna3dModel_RFD8500.txt'),
+        ]
+        try:
+            share_dir = get_package_share_directory('rfidbot_tags_localization')
+            candidate_paths.append(os.path.join(share_dir, 'data', 'antenna3dModel_RFD8500.txt'))
+        except Exception:
+            pass
+
+        chosen = next((p for p in candidate_paths if os.path.isfile(p)), None)
+        if chosen is None:
+            searched = "\n  - ".join(candidate_paths)
+            raise FileNotFoundError(
+                f"Antenna model file not found. Searched:\n  - {searched}\n"
+                "Place the model file or pass parameter 'antenna_model_path'."
+            )
+
+        with open(chosen, 'rb') as f:
             self.RFID3DModel = pickle.load(f)
-        self._logwarn("read antenna model from file %s", RFID3DModelPath)
+        self._logwarn("read antenna model from file %s", chosen)
         self._logwarn("info: %s", self.RFID3DModel.AntennaInfo)
         self._logwarn("Resolution: %.2f", self.RFID3DModel.BeliefMapResolution)
         self._logwarn("mapWidth: %d", self.RFID3DModel.mapWidth)

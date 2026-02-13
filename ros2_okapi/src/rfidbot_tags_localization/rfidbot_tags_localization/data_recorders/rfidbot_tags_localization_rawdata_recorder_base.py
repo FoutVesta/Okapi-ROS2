@@ -29,8 +29,10 @@ class rfidbotTagLocRawDataRecordBase:
     def __init__(self, node, odom_topic="/odom", rfid_topic="/rfid_tags"):
         self.node = node
         self.logger = node.get_logger()
+        self.logger.warn("rfidbotTagLocRawDataRecordBase init start")
         self.odom_topic = odom_topic
         self.rfid_topic = rfid_topic
+        self.logger.warn(f"Subscribing to odom_topic={self.odom_topic}, rfid_topic={self.rfid_topic}")
 
         self.tags = []
         self.uniqueTagsEPC = []     # unique tag EPCs; call getUniqueTags() to populate
@@ -38,12 +40,13 @@ class rfidbotTagLocRawDataRecordBase:
         self.currentPose = None
         self.tagLocRawData = None
         self.rawDataFileAddr = None
+        self._pose_msg_count = 0
 
-        # ROS 2 subscriptions
-        self.node.create_subscription(
+        # ROS 2 subscriptions (store handles to prevent GC)
+        self.rfid_sub = self.node.create_subscription(
             TagReader, self.rfid_topic, self.rfidtagsCallBack, 10
         )
-        self.node.create_subscription(
+        self.odom_sub = self.node.create_subscription(
             Odometry, self.odom_topic, self.poseCallback, 10
         )
         # self.create_subscription(PoseWithCovarianceStamped, '/pose', self.poseCallback, 10)
@@ -80,12 +83,16 @@ class rfidbotTagLocRawDataRecordBase:
             return True
 
     def poseCallback(self, msg):
+        self._pose_msg_count += 1
         if not self.isPoseValid(msg):
             self.currentPose = None
-            # self.get_logger().warn("get pose is Null")
+            if self._pose_msg_count <= 3:
+                self.logger.warn("poseCallback: received invalid pose (BAD_POSITION sentinel)")
             return
         self.currentPose = msg
-        # self.get_logger().warn(f"get pose {self.currentPose.pose.pose.position.x}")
+        if self._pose_msg_count <= 3:
+            p = self.currentPose.pose.pose.position
+            self.logger.warn(f"poseCallback: received pose x={p.x:.3f} y={p.y:.3f} z={p.z:.3f}")
         self.postions.append(msg)
 
     def saveRawData2File(self):

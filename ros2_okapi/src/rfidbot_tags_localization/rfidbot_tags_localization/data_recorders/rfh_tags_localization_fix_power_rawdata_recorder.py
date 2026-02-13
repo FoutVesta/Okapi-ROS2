@@ -13,7 +13,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
-import sys, os, os.path, pickle
+import sys, os, os.path, pickle, time
 
 # ROS 2 Python packages
 from rfidbot_tags_interfaces.msg import TagReader
@@ -29,14 +29,16 @@ from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rf
 class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
     def __init__(self, node, rate_ratio, rate, odom_topic="/odom", rfid_topic="/rfid_tags"):
         super().__init__(node, odom_topic=odom_topic, rfid_topic=rfid_topic)
-
+        # logging via base 'logger' (wrapper around node logger)
+        self.logger.warn(f"rfhFixPowerRecoder init: start")
+        
         self.name = "rfh fix power raw data recorder"
         self.rate_ratio = rate_ratio
         self.rate_hz = rate
-        self.rate = self.node.create_rate(rate)
         self.tagLocRawData = []
 
         # Parameters (declare + get)
+        self.logger.warn(f"rfhFixPowerRecorder init: declare parameters")
         self.node.declare_parameter('txpower', 130)
         self.node.declare_parameter('antenna_frameid', "RFD8500_antenna")
         self.map_frameid = self.node.get_parameter('map_frameid').value
@@ -48,16 +50,20 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
         self.poseShifter = rfhposeShifter(self.node)
 
         # Initialize filter setter for power reset and tag filter reset
+        self.logger.warn(f"rfhFixPowerRecoder init: initialize filter")
         self.isResetPower = False
         self.filterSetter = rfidbotReaderFilterSetter(self.node, self.rate_ratio, self.rate_hz)
 
-        # ROS 2 subscription
-        self.node.create_subscription(Bool, '/set_tx', self.setPowerCallback, 10)
+        # ROS 2 subscription (keep handle)
+        self.logger.warn(f"rfhFixPowerRecoder init: subscribe")
+        self.set_tx_sub = self.node.create_subscription(Bool, '/set_tx', self.setPowerCallback, 10)
 
         # Initial setup delay and reset
+        self.logger.warn(f"rfhFixPowerRecoder init: setup and delay")
         self.waitForPeriod(2.5)
+        self.logger.warn(f"rfhFixPowerRecoder init: after wait period")
         self.resetPowerLevel2Reader()
-
+        self.logger.warn("rfhFixPowerRecoder init: after power reset")
     def setPowerCallback(self, msg):
         if msg.data:
             self.resetPowerLevel2Reader()
@@ -72,10 +78,14 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
         self.isResetPower = True
 
     def waitForPeriod(self, idle_seconds):
+        self.logger.warn(f"starting waitForPeriod")
         if idle_seconds is None:
             return
-        for _ in range(int(self.rate_ratio * idle_seconds)):
-            self.rate.sleep()
+        # Use wall clock so we don't block if /clock isn't ticking (e.g., use_sim_time without a clock)
+        steps = int(self.rate_ratio * idle_seconds)
+        sleep_step = 1.0 / self.rate_ratio if self.rate_ratio > 0 else idle_seconds
+        for _ in range(max(1, steps)):
+            time.sleep(sleep_step)
 
     def rfidtagsCallBack(self, msg):
         if not self.isResetPower:
@@ -138,8 +148,17 @@ class rfhFixPowerRecoder(rfidbotTagLocRawDataRecordBase):
             targetFrame = f"RFID_antenna_{antennaID}"
         sourceframe = candidatePose.child_frame_id
         globalFrame = self.mapFrameId
+        shifted_pose = self.poseShifter.shiftPose(sourceframe, targetFrame, globalFrame, candidatePose)
+        if shifted_pose is None:
+            return None
         newpose = Odometry()
-        newpose.pose = self.poseShifter.shiftPose(sourceframe, targetFrame, globalFrame, candidatePose)
+        newpose.header.stamp = candidatePose.header.stamp
+        newpose.header.frame_id = shifted_pose.header.frame_id
+        newpose.child_frame_id = targetFrame
+        # Copy pose (Pose) into PoseWithCovariance
+        newpose.pose.pose = shifted_pose.pose
+        # Reuse covariance from incoming odom if available
+        newpose.pose.covariance = candidatePose.pose.covariance
         return newpose
 
 

@@ -36,9 +36,12 @@ LOC_FLAG_LOCALIZED = 2     # localized
 
 
 class rfhTagsLocalization(Node):
-    def __init__(self):
+    def __init__(self, node_name="rfh_tags_localization_ros2"):
         # Keep ROS2 node name consistent with launch file and legacy ROS1 name
-        super().__init__("rfh_tags_localization_main")
+        super().__init__(node_name)
+
+        # Trace that we are running the instrumented build
+        self.get_logger().warn("rfh_tags_localization_main (instrumented) starting up")
 
         # Parameters
         self.declare_parameter("localizer_type", "3DRB")
@@ -54,42 +57,56 @@ class rfhTagsLocalization(Node):
         recorder_rate_ratio = int(self.get_parameter("recorder_rate_ratio").value)
 
         self.get_logger().info(f"{self.get_name()} started")
+        
         self.get_logger().info(f"Localizer type: {self.localizerType}")
 
         # Paths for raw data
+        self.get_logger().warn(f"about to set paths")
         path = os.path.dirname(os.path.abspath(__file__))
         pardir = os.path.abspath(os.path.join(path, os.pardir))
         self.rfhFixPathRawDataFile = os.path.join(pardir, "rawdata", "rfh_fixpower_rawdata.txt")
         self.rfhFixRawDataPardir = os.path.join(pardir, "rawdata")
+        os.makedirs(self.rfhFixRawDataPardir, exist_ok=True)
 
-        # Subscriptions
-        self.create_subscription(String, "/loc_a_tag", self.localizeATagCallBack, 10)
-        self.create_subscription(Bool, "/save_raw_data", self.saveRawData, 10)
-        self.create_subscription(String, "/read_raw_data", self.readRawData, 10)
-        self.create_subscription(Bool, "/loc_all_tag", self.start2LocalizeAllTags, 10)
+        # Subscriptions (store handles to avoid garbage collection)
+        self.get_logger().warn(f"about to set subscriptions")
+        self.loc_a_tag_sub = self.create_subscription(
+            String, "/loc_a_tag", self.localizeATagCallBack, 10
+        )
+        self.save_raw_data_sub = self.create_subscription(
+            Bool, "/save_raw_data", self.saveRawData, 10
+        )
+        self.read_raw_data_sub = self.create_subscription(
+            String, "/read_raw_data", self.readRawData, 10
+        )
+        self.loc_all_tag_sub = self.create_subscription(
+            Bool, "/loc_all_tag", self.start2LocalizeAllTags, 10
+        )
         self.localizeAllScannedTagsFlag = False
 
         # Service
         self.create_service(TagLocalizing, "localize_a_tag", self.localizeATagHandler)
 
         # Data recorder
+        self.get_logger().warn(f"about to create recorder")
         self.fixPowerRecorder = rfhFixPowerRecoder(
             self, recorder_rate_ratio, recorder_rate_hz
         )
         self.fixPowerRecorder.setRawDataFileAdr(self.rfhFixPathRawDataFile)
-
+        
+        self.get_logger().warn(f"about to get localizer selection")
         # Localizer selection
         if self.localizerType == "3DRB":
-            self.RFIDLocalizer = rfh3DRBTagLoclizer()
+            self.RFIDLocalizer = rfh3DRBTagLoclizer(self)
         elif self.localizerType == "phDiff":
-            self.RFIDLocalizer = phDiffTagLoclizer()
+            self.RFIDLocalizer = phDiffTagLoclizer(self)
         elif self.localizerType == "3DRBGPU":
-            self.RFIDLocalizer = GPU3DRBTagLoclizer()
+            self.RFIDLocalizer = GPU3DRBTagLoclizer(self)
         else:
             self.get_logger().warn(
                 f"Localizer '{self.localizerType}' not found, defaulting to 3DRB"
             )
-            self.RFIDLocalizer = rfh3DRBTagLoclizer()
+            self.RFIDLocalizer = rfh3DRBTagLoclizer(self)
 
         # Publishers
         self.allTagsShower_pub = self.create_publisher(MarkerArray, "all_scanned_tags", 10)
@@ -100,7 +117,7 @@ class rfhTagsLocalization(Node):
         # Main loop timer (replaces rospy.Rate loop)
         period = 1.0 / self.spin_rate_hz if self.spin_rate_hz > 0 else 1.0
         self.timer = self.create_timer(period, self.spin_once)
-
+        self.get_logger().info(f"Init over")
     def generateRawDataFileName(self):
         """
         Generate a new file name for raw data based on current time up to minutes.
@@ -112,8 +129,24 @@ class rfhTagsLocalization(Node):
         return rawDataName
 
     def start2LocalizeAllTags(self, msg):
-        self.localizeAllScannedTagsFlag = True
+        """
+        Trigger localization of all currently scanned tags.
+
+        Previously this only set a flag and relied on the periodic timer to
+        notice it. If timers are paused (e.g., use_sim_time without /clock),
+        the follow-up work never ran. Run the work immediately and keep the
+        flag for compatibility with the timer-based path.
+        """
+        self.get_logger().warn(f"start2LocalizeAllTags called with msg.data={msg.data}")
+        if not msg.data:
+            return  # ignore false pulses
+
         self.get_logger().warn("Received /loc_all_tag trigger; localizing all scanned tags.")
+        self.localizeAllScannedTagsFlag = True
+
+        # Run immediately instead of waiting for the next timer tick; the timer
+        # remains as a fallback but will see the flag already cleared below.
+        self.spin_once()
 
     def saveRawData(self, msg):
         if not msg.data:
@@ -132,7 +165,7 @@ class rfhTagsLocalization(Node):
 
     def localizeATagHandler(self, request, response):
         tagEPC = request.tag_epc
-        self.get_logger().warn(f"Receive localize a tag {tagEPC}")
+        self.get_logger().warn(f"localizeATagHandler service request: {tagEPC}")
         (localizingFlag, posx, posy, posz) = self.localizeAtag(tagEPC)
         response.tag_epc = tagEPC
         response.localizing_flag = int(localizingFlag)
@@ -146,6 +179,7 @@ class rfhTagsLocalization(Node):
         Callback for localizing a single tag by EPC; shows the tag on the map.
         """
         tagEPC = msg.data
+        self.get_logger().warn(f"localizeATagCallBack message received: {tagEPC}")
         markerArray = MarkerArray()
 
         start = timer()
@@ -176,11 +210,18 @@ class rfhTagsLocalization(Node):
         localizingFlag = LOC_FLAG_NO_RAW_DATA
         rawData = self.fixPowerRecorder.getRawDataForATag(tagEPC)
 
+        self.get_logger().warn(f"localizeAtag start: tag={tagEPC}, rawData None? {rawData is None}")
+        if rawData:
+            self.get_logger().warn(f"rawData entries: {len(rawData)}")
+
         if rawData is None:
             self.get_logger().warn("No raw data found for the tag.")
             return (localizingFlag, None, None, None)
 
         (localizingFlag, posx, posy, posz) = self.RFIDLocalizer.localizesATag(tagEPC, rawData)
+        self.get_logger().warn(
+            f"localizeAtag done: tag={tagEPC}, flag={localizingFlag}, pos=({posx},{posy},{posz})"
+        )
         return (localizingFlag, posx, posy, posz)
 
     def localizeAllScannedTags(self):
@@ -225,6 +266,7 @@ class rfhTagsLocalization(Node):
 
     def spin_once(self):
         # Execute periodic tasks (replaces while not rospy.is_shutdown())
+        self.get_logger().warn(f"spin_once tick: localizeAllScannedTagsFlag={self.localizeAllScannedTagsFlag}")
         if self.localizeAllScannedTagsFlag:
             self.localizeAllScannedTags()
             self.localizeAllScannedTagsFlag = False

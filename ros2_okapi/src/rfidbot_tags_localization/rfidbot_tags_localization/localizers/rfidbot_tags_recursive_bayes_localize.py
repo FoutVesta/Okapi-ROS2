@@ -56,8 +56,9 @@ class rfidbotRBLocalizeATag:
         self.RFIDModel.AntennaInfo = ""
         self.RFIDModel.BeliefMapResolution = 0.05  # map resolution in meters
         self.RFIDModel.generateRFIDModelMap()
-        self.logger.info("RFID model initialized with resolution %.2f",
-                         self.RFIDModel.BeliefMapResolution)
+        self.logger.info(
+            f"RFID model initialized with resolution {self.RFIDModel.BeliefMapResolution:.2f}"
+        )
 
     # ----------------------------------------------------------
     # DATA SETUP
@@ -251,4 +252,3 @@ if __name__ == "__main__":
     loc.RFIDModel.generateRFIDModelMap()
     loc.logger.info("Belief map shape: %s x %s", loc.RFIDModel.mapWidth, loc.RFIDModel.mapHeight)
     rclpy.shutdown()
-

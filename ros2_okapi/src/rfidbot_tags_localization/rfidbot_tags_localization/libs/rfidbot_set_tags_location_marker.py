@@ -19,7 +19,9 @@ _node_instance = None
 def _get_node():
     global _node_instance
     if _node_instance is None:
-        rclpy.init(args=None)
+        # Avoid calling rclpy.init() twice; reuse existing context if already initialized.
+        if not rclpy.ok():
+            rclpy.init(args=None)
         _node_instance = Node('marker_time_helper')
     return _node_instance
 
@@ -228,4 +230,3 @@ def setMarkerwithTransparent(PosX, PosY, color, size, trans, frameId):
     marker.pose.position.y = PosY
     marker.pose.position.z = 0
     return marker
-

@@ -86,7 +86,10 @@ class rfhposeShifter:
             tfSource2Global.header.stamp = self.clock.now().to_msg()
             tfSource2Global.header.frame_id = globalFrameId 
             tfSource2Global.child_frame_id = sourceFrameId 
-            tfSource2Global.transform.translation = pose.pose.pose.position
+            # Assign fields explicitly; Transform.translation expects a Vector3, not a Point
+            tfSource2Global.transform.translation.x = pose.pose.pose.position.x
+            tfSource2Global.transform.translation.y = pose.pose.pose.position.y
+            tfSource2Global.transform.translation.z = pose.pose.pose.position.z
             tfSource2Global.transform.rotation = pose.pose.pose.orientation
 
             # emulate composition (since TransformerROS is not in ROS2)
@@ -223,7 +226,9 @@ class rfhposeShifter:
             t.header.stamp = self.clock.now().to_msg()
             t.header.frame_id = globalFrameId
             t.child_frame_id = sourceFrameId
-            t.transform.translation = pose.pose.pose.position
+            t.transform.translation.x = pose.pose.pose.position.x
+            t.transform.translation.y = pose.pose.pose.position.y
+            t.transform.translation.z = pose.pose.pose.position.z
             t.transform.rotation.x = quat[0]
             t.transform.rotation.y = quat[1]
             t.transform.rotation.z = quat[2]

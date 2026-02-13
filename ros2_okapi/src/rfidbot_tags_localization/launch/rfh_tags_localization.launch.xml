@@ -3,9 +3,10 @@
 
   <!-- Launch arguments -->
   <!-- Use RGB-D odometry from rtabmap (child_frame_id == camera_link) so TF to the antenna exists -->
-  <arg name="odom_topic" default="/odom"/>
+  <!-- Feed nav_msgs/Odometry; default to RealSense odom topic (odom) -->
+  <arg name="odom_topic" default="odom"/>
   <arg name="rfid_txpower" default="170"/>
-  <arg name="antenna_frameid" default="RFD8500_footprint"/>
+  <arg name="antenna_frameid" default="RFD8500_antenna"/>
   <arg name="map_frameid" default="map"/>
   <arg name="rfid_ob_mindis" default="0.01"/>
   <arg name="localizer_type" default="3DRBGPU"/>
@@ -15,9 +16,8 @@
   <node
     pkg="rfidbot_tags_localization"
     exec="rfh_tags_localization_main_ros2"
-    name="rfh_tags_localization_main"
     output="screen">
-
+  
     <!-- Remaps -->
     <remap from="/odom" to="$(var odom_topic)"/>
 
@@ -29,6 +29,6 @@
     <param name="localizer_type" value="$(var localizer_type)"/>
     <param name="reader_type" value="$(var reader_type)"/>
 
-  </node>
+  </node> 
 
 </launch>

@@ -13,7 +13,7 @@
  * Remark:
 '''
 
-import sys, os
+import os
 import pickle
 import time
 from timeit import default_timer as timer
@@ -21,6 +21,7 @@ import numpy as np
 
 import rclpy
 from rclpy.logging import get_logger
+from rclpy.node import Node
 
 from geometry_msgs.msg import PoseStamped, TransformStamped, PointStamped
 import tf_transformations  # quaternion math helpers
@@ -34,10 +35,10 @@ from rfidbot_tags_localization.localizers.rfh_3d_recursive_bayes_localizer impor
 from rfidbot_tags_localization.libs.rfh_tags_localization_pose_shifter import rfhposeShifter
 from rfidbot_tags_localization.libs.rfidbot_tags_debuger import RRRBDebuger
 
-path = sys.path[0]
-pardir = os.path.abspath(os.path.join(path, os.pardir))
+module_dir = os.path.dirname(os.path.abspath(__file__))
+pardir = os.path.abspath(os.path.join(module_dir, os.pardir))
 # RFD8500 reader model
-RFID3DModelPath = pardir + '/data/antenna3dModel_RFD8500.txt'
+RFID3DModelPath = os.path.join(pardir, 'data', 'antenna3dModel_RFD8500.txt')
 
 # Localization flags
 LOC_FLAG_NO_RAW_DATA = 0    # no raw data
@@ -55,9 +56,9 @@ class GPU3DRBTagLoclizer(rfh3DRBTagLoclizer):
     * based on the Okapi raw data using recursive Bayesian updating to localize a tag in 3d
     * and optimized by GPU
     '''
-    def __init__(self):
+    def __init__(self, node: Node):
         self.name = "GPU 3d tag localizer"
-        super().__init__()
+        super().__init__(node)
         self.logger = get_logger('GPU3DRBTagLoclizer')
         # self.minRfidObDis is defined in base; ensure it exists / default if needed
         if not hasattr(self, 'minRfidObDis'):
