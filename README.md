@@ -1,4 +1,4 @@
-# Okapi-ROS2
+## Okapi-ROS2
 Okapi Localization for ROS2 Humble Distribution
 
 # Camera Setup
