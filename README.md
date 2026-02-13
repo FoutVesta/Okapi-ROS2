@@ -4,20 +4,22 @@ Okapi Localization for ROS2 Humble Distribution
 # Camera Setup
 
 1. Install the RealSense SDK
+'''bash
   sudo apt install ros-humble-librealsense2*
-2. Install ROS Wrapper for RealSense Cameras (from source since debian packages doesnt work for some reason)
+'''
+3. Install ROS Wrapper for RealSense Cameras (from source since debian packages doesnt work for some reason)
   mkdir -p ~/realsense_ws/src
   cd ~/realsense_ws/src/
   git clone https://github.com/realsenseai/realsense-ros.git -b ros2-master
   cd ~/realsense_ws
-3. Install dependencies
+4. Install dependencies
   sudo apt-get install python3-rosdep -y
   sudo rosdep init 
   rosdep update 
   rosdep install -i --from-path src --rosdistro $ROS_DISTRO --skip-keys=librealsense2 -y
-4. Build
+5. Build
   colcon build
-5. Source Environment
+6. Source Environment
   ROS_DISTRO=humble
   source /opt/ros/$ROS_DISTRO/setup.bash
   cd ~/realsense_ws
