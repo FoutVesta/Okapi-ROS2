@@ -40,6 +40,7 @@ Okapi Localization for ROS2 Humble Distribution
 ```
 
 7. Imu Madgwick Filter
+
 RealSense wrapper has built in functionality to unite the gyro and acceleration using unite_imu_method set to '2' to enable linear interpolation. However, to use this combined imu data it requires orientation data as well, which realsense does not do by itself. So, we use Madgwick to create orientation data united imu topic. imu_topic therefore is set to /d400/imu_filtered, not /d400/imu.
 ```bash
   sudo apt install ros-humble-imu-filter-madgwick
@@ -68,4 +69,6 @@ RealSense wrapper has built in functionality to unite the gyro and acceleration 
 ```
 
 # NOTES
+
 - Because only the D435i is the only camera in use for this build, it can be quite slow because its being used to capture all needed data, so it cannot be moved very fast. I will work on a branch that uses Foxy distribution so we can continue using the t265.
+- You can tweak the settings of the D435i via line 79 in the rfh_realsensemapping_bringup.launch.xml to make the camera better handle faster motion. It's not perfect though, so using the t265 is the preferable choice.
