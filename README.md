@@ -24,6 +24,14 @@ pip3 install git+https://github.com/DLu/tf_transformations.git
 sudo apt install python3-bluez
 pip3 install transforms3d
 ```
+MUST DO THIS
+
+```bash
+pip3 uninstall numpy -y
+pip3 uninstall opencv-python matplotlib -y
+sudo apt update
+sudo apt install python3-numpy python3-opencv python3-matplotlib -y
+```
 
 1. Install and Build the RealSense SDK from source (v2.51.1)
 
