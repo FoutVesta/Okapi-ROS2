@@ -14,6 +14,13 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>rfidbot_tags_interfaces</exec_depend>
+  <exec_depend>rfidbot_tags_localization</exec_depend>
+  <exec_depend>rfidbot_tags_reader</exec_depend>
+  <exec_depend>rfh_handheld_description</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>rtabmap_launch</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>rviz2</exec_depend>
 
   
     

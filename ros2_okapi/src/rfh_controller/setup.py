@@ -12,6 +12,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch',
             ['launch/rfh_realsensemapping_bringup.launch.xml',
+            'launch/rfh_realsensemapping_t265_bringup.launch.xml',
             'launch/rfh_rfid_bringup.launch.xml']),
     ],
     install_requires=['setuptools'],
@@ -31,5 +32,4 @@ setup(
         ],
     },
 )
-
 

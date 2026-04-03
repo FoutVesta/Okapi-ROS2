@@ -86,7 +86,7 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        RFD8500_antena:
+        RFD8500_antenna:
           Value: true
         RFD8500_footprint:
           Value: true
@@ -122,7 +122,7 @@ Visualization Manager:
             t265_pose_frame:
               t265_link:
                 RFD8500_footprint:
-                  RFD8500_antena:
+                  RFD8500_antenna:
                     {}
                 d400_link:
                   d400_aligned_depth_to_color_frame:
@@ -175,7 +175,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /rtabmap/mapData
+      Topic: /mapData
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <!-- ========================= -->
+    <!-- Arguments -->
+    <!-- ========================= -->
+    <arg name="use_rviz"          default="true"/>
+    <arg name="camera"            default="d400"/>
+    <arg name="rfid_txpower"      default="130"/>
+    <arg name="localization"      default="false"/>
+    <arg name="clip_distance"     default="-1.0"/>
+    <arg name="use_rtabmapviz"    default="false"/>
+
+    <arg name="t265_serial"       default="_230322110576"/>
+    <arg name="d435i_serial"      default="_335222076590"/>
+    <arg name="rfid_mount_x"      default="-0.25"/>
+
+    <!-- ========================= -->
+    <!-- Zebra RFID description -->
+    <!-- ========================= -->
+    <include
+        file="$(find-pkg-share rfh_handheld_description)/launch/zebraRFD8500reader_description.launch.xml"/>
+
+    <!-- ========================= -->
+    <!-- Static TFs -->
+    <!-- ========================= -->
+    <node pkg="tf2_ros" exec="static_transform_publisher"
+          name="t265_link_to_base"
+          args="0 0 0 0 0 0 t265_link base_link"/>
+
+    <node pkg="tf2_ros" exec="static_transform_publisher"
+          name="base_to_camera"
+          args="0 0 0 0 0 0 base_link $(var camera)_link"/>
+
+    <node pkg="tf2_ros" exec="static_transform_publisher"
+          name="base_to_rfidreader"
+          args="$(var rfid_mount_x) 0 0 0 0 0 base_link RFD8500_footprint"/>
+
+    <!-- ========================= -->
+    <!-- T265 FIRST -->
+    <!-- ========================= -->
+    <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+        <arg name="camera_name" value="t265"/>
+        <arg name="camera_namespace" value=""/>
+        <arg name="device_type" value="t265"/>
+        <arg name="serial_no" value="$(var t265_serial)"/>
+        <arg name="enable_gyro" value="true"/>
+        <arg name="enable_accel" value="true"/>
+        <arg name="initial_reset" value="false"/>
+        <arg name="tf_publish_rate" value="30.0"/>
+    </include>
+
+    <!--  (T265 → /odom) 
+    <node pkg="topic_tools" exec="relay"
+          name="t265_to_odom"
+          args="/t265/pose/sample /odom"/> -->
+
+    <!-- ========================= -->
+    <!-- D435i SECOND -->
+    <!-- ========================= -->
+    <timer period="4.0">
+        <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+            <arg name="camera_name" value="$(var camera)"/>
+            <arg name="camera_namespace" value=""/>
+            <arg name="device_type" value="d435i"/>
+            <arg name="serial_no" value="$(var d435i_serial)"/>
+
+            <arg name="enable_gyro" value="false"/>
+            <arg name="enable_accel" value="false"/>
+
+            <arg name="enable_depth" value="true"/>
+            <arg name="enable_color" value="true"/>
+            <arg name="enable_sync" value="true"/>
+
+            <arg name="rgb_camera.color_profile" value="640x480x15"/>
+            <arg name="depth_module.depth_profile" value="640x480x15"/>
+
+            <arg name="align_depth.enable" value="true"/>
+            <arg name="pointcloud.enable" value="false"/>
+            <arg name="clip_distance" value="$(var clip_distance)"/>
+
+            <arg name="tf_publish_rate" value="0.0"/>
+            <arg name="initial_reset" value="false"/>
+        </include>
+    </timer>
+
+    <!-- ========================= -->
+    <!-- RTAB-Map THIRD -->
+    <!-- ========================= -->
+    <timer period="8.0">
+        <include file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+
+            <arg name="namespace" value=""/>
+            <arg name="rtabmap_args" value="--delete_db_on_start"/>
+
+            <arg name="rgb_topic" value="/$(var camera)/color/image_raw"/>
+            <arg name="depth_topic" value="/$(var camera)/aligned_depth_to_color/image_raw"/>
+            <arg name="camera_info_topic" value="/$(var camera)/color/camera_info"/>
+
+            <arg name="frame_id" value="base_link"/>
+
+            <arg name="visual_odometry" value="false"/>
+            <arg name="odom_topic" value="/t265/pose/sample"/>
+
+            <arg name="rgbd_sync" value="false"/>
+            <arg name="subscribe_rgbd" value="false"/>
+            <arg name="approx_sync" value="true"/>
+            <arg name="depth_scale" value="0.001"/>
+            <arg name="approx_sync_max_interval" value="0.03"/>
+
+            <arg name="queue_size" value="100"/>
+            <arg name="rtabmap_viz" value="$(var use_rtabmapviz)"/>
+            <arg name="rviz" value="false"/>
+
+            <arg name="rviz_cfg"
+                 value="$(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
+        </include>
+    </timer>
+
+    <!-- ========================= -->
+    <!-- RViz -->
+    <!-- ========================= -->
+    <node if="$(var use_rviz)"
+          pkg="rviz2"
+          exec="rviz2"
+          name="rviz2_okapi"
+          output="screen"
+          args="-d $(find-pkg-share rfh_controller)/launch/config/okapi.rviz"/>
+
+</launch>
