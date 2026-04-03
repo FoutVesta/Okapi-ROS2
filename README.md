@@ -21,6 +21,8 @@ sudo apt install -y \
 pip3 install pyserial
 pip3 install transformations
 pip3 install git+https://github.com/DLu/tf_transformations.git
+sudo apt install python3-bluez
+pip3 install transforms3d
 ```
 
 1. Install and Build the RealSense SDK from source (v2.51.1)
