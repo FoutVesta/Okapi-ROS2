@@ -46,6 +46,32 @@ class rfhposeShifter:
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
         self.br = tf2_ros.TransformBroadcaster(self.node)
 
+    def _transform_to_matrix(self, transform):
+        quat = [
+            transform.rotation.x,
+            transform.rotation.y,
+            transform.rotation.z,
+            transform.rotation.w,
+        ]
+        matrix = tf_transformations.quaternion_matrix(quat)
+        matrix[0, 3] = transform.translation.x
+        matrix[1, 3] = transform.translation.y
+        matrix[2, 3] = transform.translation.z
+        return matrix
+
+    def _pose_to_matrix(self, pose_msg):
+        quat = [
+            pose_msg.orientation.x,
+            pose_msg.orientation.y,
+            pose_msg.orientation.z,
+            pose_msg.orientation.w,
+        ]
+        matrix = tf_transformations.quaternion_matrix(quat)
+        matrix[0, 3] = pose_msg.position.x
+        matrix[1, 3] = pose_msg.position.y
+        matrix[2, 3] = pose_msg.position.z
+        return matrix
+
     def shiftPose(self, sourceFrameId, targetFrameId, globalFrameId, pose):
         '''
         * Description: It can work when the camera localization is on or off.
@@ -71,49 +97,50 @@ class rfhposeShifter:
         * Output: newPose, the pose of targetFrameId in coordinate of globalFrameId 
         '''
         newPose = None
-        try:       
-            # get the tf of transforming sourceFrameId to targetFrameId in the coordinate of sourceFrameId         
+        try:
+            pose_parent_frame = pose.header.frame_id
+            pose_source_frame = pose.child_frame_id
+            pose_time = rclpy.time.Time.from_msg(pose.header.stamp)
+
+            if pose_source_frame and pose_source_frame != sourceFrameId:
+                self.logger.warn(
+                    f"shiftPose source frame mismatch: arg={sourceFrameId}, pose.child_frame_id={pose_source_frame}. Using pose.child_frame_id."
+                )
+                sourceFrameId = pose_source_frame
+
+            # Static transform from recorded source frame to target frame.
             transform = self.tf_buffer.lookup_transform(
                 sourceFrameId,
                 targetFrameId, 
-                rclpy.time.Time(),  # get the tf at first available time because this tf is fixed
+                rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=1.0)
             )
 
-            # The tf should be based on the recorded pose  
-            # provide the tf of transforming header.frame_id to child_frame_id in coordinate of header.frame_id
-            tfSource2Global = TransformStamped()  # creating new transform msg
-            tfSource2Global.header.stamp = self.clock.now().to_msg()
-            tfSource2Global.header.frame_id = globalFrameId 
-            tfSource2Global.child_frame_id = sourceFrameId 
-            # Assign fields explicitly; Transform.translation expects a Vector3, not a Point
-            tfSource2Global.transform.translation.x = pose.pose.pose.position.x
-            tfSource2Global.transform.translation.y = pose.pose.pose.position.y
-            tfSource2Global.transform.translation.z = pose.pose.pose.position.z
-            tfSource2Global.transform.rotation = pose.pose.pose.orientation
+            pose_parent_to_source = self._pose_to_matrix(pose.pose.pose)
+            source_to_target = self._transform_to_matrix(transform.transform)
 
-            # emulate composition (since TransformerROS is not in ROS2)
-            trans = [
-                tfSource2Global.transform.translation.x + transform.transform.translation.x,
-                tfSource2Global.transform.translation.y + transform.transform.translation.y,
-                tfSource2Global.transform.translation.z + transform.transform.translation.z,
-            ]
-            rot = tf_transformations.quaternion_multiply(
-                [
-                    transform.transform.rotation.x,
-                    transform.transform.rotation.y,
-                    transform.transform.rotation.z,
-                    transform.transform.rotation.w,
-                ],
-                [
-                    tfSource2Global.transform.rotation.x,
-                    tfSource2Global.transform.rotation.y,
-                    tfSource2Global.transform.rotation.z,
-                    tfSource2Global.transform.rotation.w,
-                ],
+            global_to_pose_parent = tf_transformations.identity_matrix()
+            if pose_parent_frame and pose_parent_frame != globalFrameId:
+                global_to_parent_tf = self.tf_buffer.lookup_transform(
+                    globalFrameId,
+                    pose_parent_frame,
+                    pose_time,
+                    timeout=rclpy.duration.Duration(seconds=1.0)
+                )
+                global_to_pose_parent = self._transform_to_matrix(global_to_parent_tf.transform)
+
+            # Mirror the ROS1 TransformerROS composition:
+            # global -> pose.header.frame_id -> sourceFrameId -> targetFrameId
+            global_to_target = tf_transformations.concatenate_matrices(
+                global_to_pose_parent,
+                pose_parent_to_source,
+                source_to_target,
             )
+            trans = tf_transformations.translation_from_matrix(global_to_target)
+            rot = tf_transformations.quaternion_from_matrix(global_to_target)
 
             newPose = PoseStamped()
+            newPose.header.stamp = pose.header.stamp
             newPose.header.frame_id = globalFrameId
             newPose.pose.position.x = trans[0]
             newPose.pose.position.y = trans[1]

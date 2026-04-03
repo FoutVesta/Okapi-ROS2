@@ -77,24 +77,10 @@ class GPU3DRBTagLoclizer(rfh3DRBTagLoclizer):
         *              The tf transforms a model at origin/zero-orientation to the pose in the global frame
         * output: return (trans, rot) or (None, None) if failed
         '''
-        antennaPose = rawItem.antennaPose
-        if antennaPose is None or antennaPose.pose is None:
-            return None, None
-
-        # We only need a static transform (translation + rotation) from global -> antenna.
-        # Use the pose directly instead of the old ROS1 TransformerROS helper.
-        trans = (
-            antennaPose.pose.pose.position.x,
-            antennaPose.pose.pose.position.y,
-            antennaPose.pose.pose.position.z,
-        )
-        rot = (
-            antennaPose.pose.pose.orientation.x,
-            antennaPose.pose.pose.orientation.y,
-            antennaPose.pose.pose.orientation.z,
-            antennaPose.pose.pose.orientation.w,
-        )
-        return (trans, rot)
+        g2m_tf = super().generateTf(rawItem)
+        if g2m_tf is None:
+            return (None, None)
+        return g2m_tf
 
     def getBelin3DModel(self, rawItem, esLoc, trans, rot):
         '''

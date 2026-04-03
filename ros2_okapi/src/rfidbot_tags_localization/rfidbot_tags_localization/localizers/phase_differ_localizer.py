@@ -78,6 +78,19 @@ class phDiffTagLoclizer(rfidbotRBLocalizeATag):
     def _loginfo(self, msg, *args):
         self.logger.info(msg % args if args else msg)
 
+    def _pose_to_matrix(self, antennaPose):
+        quat = (
+            antennaPose.pose.pose.orientation.x,
+            antennaPose.pose.pose.orientation.y,
+            antennaPose.pose.pose.orientation.z,
+            antennaPose.pose.pose.orientation.w,
+        )
+        matrix = tf_transformations.quaternion_matrix(quat)
+        matrix[0, 3] = antennaPose.pose.pose.position.x
+        matrix[1, 3] = antennaPose.pose.pose.position.y
+        matrix[2, 3] = antennaPose.pose.pose.position.z
+        return matrix
+
     # ===================
     # MODEL LOADING
     # ===================
@@ -160,34 +173,19 @@ class phDiffTagLoclizer(rfidbotRBLocalizeATag):
 
     def generateTf(self, rawItem):
         antennaPose = rawItem.antennaPose
-        res = TransformStamped()
-        res.header.stamp = rclpy.time.Time().to_msg()
-        res.header.frame_id = "global"
-        res.child_frame_id = "rfid_model"
-        res.transform.translation = antennaPose.pose.pose.position
-        res.transform.rotation = antennaPose.pose.pose.orientation
-        transformer = TransformerROS()
-        transformer.setTransform(res)
-        try:
-            transformer.lookupTransform("rfid_model", "global", rclpy.time.Time().to_msg())
-        except Exception as e:
-            self._logwarn("tf failed: %s", str(e))
+        if antennaPose is None or antennaPose.pose is None or antennaPose.pose.pose is None:
             return None
-        return transformer
 
-    def getBelin3DModel(self, rawItem, esLoc, transformer):
+        pose_matrix = self._pose_to_matrix(antennaPose)
+        return tf_transformations.inverse_matrix(pose_matrix)
+
+    def getBelin3DModel(self, rawItem, esLoc, inverse_pose_matrix):
         zeroBel = 1e-9
-        gpoint = PointStamped()
-        gpoint.point.x, gpoint.point.y, gpoint.point.z = esLoc
-        gpoint.header.stamp = rclpy.time.Time().to_msg()
-        gpoint.header.frame_id = "global"
-        try:
-            mpoint = transformer.transformPoint("rfid_model", gpoint)
-        except Exception:
-            return 1
-        model_x = mpoint.point.y + self.RFID3DModel.AntennaLoc[0]
-        model_y = mpoint.point.x + self.RFID3DModel.AntennaLoc[1]
-        model_z = mpoint.point.z + self.RFID3DModel.AntennaLoc[2]
+        global_point = [esLoc[0], esLoc[1], esLoc[2], 1.0]
+        model_point = inverse_pose_matrix.dot(global_point)
+        model_x = model_point[1] + self.RFID3DModel.AntennaLoc[0]
+        model_y = model_point[0] + self.RFID3DModel.AntennaLoc[1]
+        model_z = model_point[2] + self.RFID3DModel.AntennaLoc[2]
         mapIdCol = int(round(model_y / self.RFID3DModel.BeliefMapResolution))
         mapIdRow = int(round(model_x / self.RFID3DModel.BeliefMapResolution))
         mapIdVel = int(round(model_z / self.RFID3DModel.BeliefMapResolution))
@@ -424,7 +422,7 @@ class phDiffTagLoclizer(rfidbotRBLocalizeATag):
         * input: rData, include the rawdata pose, which is camera pose
         * output: rData, which update the pose to antenna one 
         '''
-        targetFrame = "RFD8500_antena"
+        targetFrame = "RFD8500_antenna"
         sourceframe = "ZED_center" 
         globalFrame = "map"
         #def shiftPose(self,sourceFrameId,targetFrameId,globalFrameId,pose):

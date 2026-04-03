@@ -14,6 +14,7 @@ from std_msgs.msg import Int16
 from rfidbot_tags_interfaces.msg import TagReader
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
+from rclpy.qos import qos_profile_sensor_data
 import pickle
 import os
 
@@ -47,7 +48,10 @@ class rfidbotTagLocRawDataRecordBase:
             TagReader, self.rfid_topic, self.rfidtagsCallBack, 10
         )
         self.odom_sub = self.node.create_subscription(
-            Odometry, self.odom_topic, self.poseCallback, 10
+            Odometry,
+            self.odom_topic,
+            self.poseCallback,
+            qos_profile_sensor_data
         )
         # self.create_subscription(PoseWithCovarianceStamped, '/pose', self.poseCallback, 10)
 

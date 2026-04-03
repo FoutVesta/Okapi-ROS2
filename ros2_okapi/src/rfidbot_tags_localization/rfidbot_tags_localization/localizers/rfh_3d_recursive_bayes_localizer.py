@@ -89,6 +89,19 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
     def _loginfo(self, msg, *args):
         self.logger.info(msg % args if args else msg)
 
+    def _pose_to_matrix(self, antennaPose):
+        quat = (
+            antennaPose.pose.pose.orientation.x,
+            antennaPose.pose.pose.orientation.y,
+            antennaPose.pose.pose.orientation.z,
+            antennaPose.pose.pose.orientation.w,
+        )
+        matrix = tf_transformations.quaternion_matrix(quat)
+        matrix[0, 3] = antennaPose.pose.pose.position.x
+        matrix[1, 3] = antennaPose.pose.pose.position.y
+        matrix[2, 3] = antennaPose.pose.pose.position.z
+        return matrix
+
     def loadRFID3DModel(self):
         # Ensure pickled antenna model can import its module without ROS1 rospy
         if 'rospy' not in sys.modules:
@@ -198,22 +211,17 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
 
     def generateTf(self, rawItem):
         """
-        Return (trans, rot) tuple representing the antenna pose in the global frame.
+        Return the inverse transform of the antenna pose, matching the ROS1
+        lookupTransform("rfid_model", "global") behavior.
         """
         antennaPose = rawItem.antennaPose
-        if antennaPose is None or antennaPose.pose is None:
+        if antennaPose is None or antennaPose.pose is None or antennaPose.pose.pose is None:
             return None
-        trans = (
-            antennaPose.pose.pose.position.x,
-            antennaPose.pose.pose.position.y,
-            antennaPose.pose.pose.position.z,
-        )
-        rot = (
-            antennaPose.pose.pose.orientation.x,
-            antennaPose.pose.pose.orientation.y,
-            antennaPose.pose.pose.orientation.z,
-            antennaPose.pose.pose.orientation.w,
-        )
+
+        pose_matrix = self._pose_to_matrix(antennaPose)
+        inverse_pose_matrix = tf_transformations.inverse_matrix(pose_matrix)
+        trans = tf_transformations.translation_from_matrix(inverse_pose_matrix)
+        rot = tf_transformations.quaternion_from_matrix(inverse_pose_matrix)
         return (trans, rot)
 
     def getBelin3DModel(self, rawItem, esLoc, trans, rot):
@@ -297,7 +305,7 @@ class rfh3DRBTagLoclizer(rfidbotRBLocalizeATag):
         return (tf_buffer, tf_listener)
 
     def tfCameraPose2AntennaPose(self, tf_buffer, rData):
-        targetFrame = "RFD8500_antena"
+        targetFrame = "RFD8500_antenna"
         sourceframe = "ZED_center"
         globalFrame = "map"
         rData.antennaPose.pose = self.poseShifter.shiftPose(
