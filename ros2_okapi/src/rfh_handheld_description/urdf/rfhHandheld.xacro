@@ -65,7 +65,7 @@
              <child link="RFD8500_footprint" />
     </joint>
 
-	<link name="RFD8500_antena">
+	<link name="RFD8500_antenna">
 	    <visual>
 			<origin xyz="-0.015 0 0" rpy="0 0 0" />
 			<geometry>
@@ -84,7 +84,7 @@
     <joint name="RFD8500_antenna_footprint_joint" type="fixed">
   	        <origin xyz="0.01 0.0 -0.07" rpy="0 0.312 0" />   <!-- xyz="0.09 0 0.055" rpy="0 0.2356 0": rotation 15  Kinect 2 need add 0.05 as offset -->
  	        <parent link="RFD8500_footprint" />  <!-- base_middle_link -->
-             <child link="RFD8500_antena" />
+             <child link="RFD8500_antenna" />
     </joint>
 	
 <!-- kinnect links and joints -->
