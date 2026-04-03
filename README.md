@@ -5,7 +5,7 @@ This branch of Okapi ROS2 allows for functionality of the T255 camera alongside 
 
 ## Camera Setup
 
-1. Install and Build the RealSense SDK from source (v2.51.1)
+First Install Overall Dependencies
 ```bash
 sudo apt update
 sudo apt install -y \
@@ -18,6 +18,14 @@ sudo apt install -y \
     python3-rosdep \
     python3-vcstool
 
+pip3 install pyserial
+pip3 install transformations
+pip3 install git+https://github.com/DLu/tf_transformations.git
+```
+
+1. Install and Build the RealSense SDK from source (v2.51.1)
+
+```bash
 git clone https://github.com/IntelRealSense/librealsense.git
 cd librealsense
 git checkout v2.51.1
