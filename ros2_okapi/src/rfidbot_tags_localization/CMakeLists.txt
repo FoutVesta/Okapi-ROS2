@@ -39,10 +39,23 @@ ament_python_install_package(${PROJECT_NAME})
 ## Install launch files (XML)
 ################################################
 
-install(
-  DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}
-)
+#install(
+#  DIRECTORY rfidbot_tags_localization
+#  DESTINATION lib/${PROJECT_NAME}
+#)
+
+#install(
+#  DIRECTORY launch
+#  DESTINATION share/${PROJECT_NAME}
+#)
+
+# Optionally install packaged data files (antenna models, etc.) if present
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/data")
+  install(
+    DIRECTORY data
+    DESTINATION share/${PROJECT_NAME}
+  )
+endif()
 
 ################################################
 ## Export dependencies
@@ -55,4 +68,3 @@ ament_export_dependencies(
 )
 
 ament_package()
-

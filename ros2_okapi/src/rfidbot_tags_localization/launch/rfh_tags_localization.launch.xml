@@ -2,9 +2,8 @@
 <launch>
 
   <!-- Launch arguments -->
-  <!-- Use RGB-D odometry from rtabmap (child_frame_id == camera_link) so TF to the antenna exists -->
-  <!-- Feed nav_msgs/Odometry; default to RealSense odom topic (odom) -->
-  <arg name="odom_topic" default="odom"/>
+  <!-- Use T265 pose as odometry source -->
+  <arg name="odom_topic" default="/t265/pose/sample"/>
   <arg name="rfid_txpower" default="170"/>
   <arg name="antenna_frameid" default="RFD8500_antenna"/>
   <arg name="map_frameid" default="map"/>
@@ -18,7 +17,7 @@
     exec="rfh_tags_localization_main_ros2"
     output="screen">
   
-    <!-- Remaps -->
+    <!-- Remap odometry -->
     <remap from="/odom" to="$(var odom_topic)"/>
 
     <!-- Parameters -->
