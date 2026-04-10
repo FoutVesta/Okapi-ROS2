@@ -103,7 +103,7 @@ source ~/.bashrc
 ```bash
   mkdir -p ~/okapiros2_ws
   cd ~/okapiros2_ws
-  git clone -b OkapiROS2-+-D435i https://github.com/FoutVesta/Okapi-ROS2.git
+  git clone -b OkapiROS2Full https://github.com/FoutVesta/Okapi-ROS2.git
   cd ~/ros2_okapi
   colcon build
   source /opt/ros/humble/setup.bash
