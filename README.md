@@ -1,7 +1,7 @@
 # Okapi-ROS2 (T265 + D435i)
 Okapi Localization for ROS2 Humble Distribution
 
-This branch of Okapi ROS2 allows for functionality of the T255 camera alongside the D435i by using an older distribution of the RealSense SDK (2.51) and Wrapper (4.51). 
+This branch of Okapi ROS2 allows for functionality of the T265 camera alongside the D435i by using an older distribution of the RealSense SDK (2.51) and Wrapper (4.51). 
 
 ## Camera Setup
 
